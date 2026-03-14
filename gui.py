@@ -6,11 +6,7 @@ Construction mechs build a space fortress as your AI agents work.
 
 from __future__ import annotations
 
-import glob as globmod
-import json
 import os
-import shutil
-import subprocess
 import sys
 import random
 import time
@@ -170,106 +166,6 @@ class InfoPopup:
             screen.blit(thought_surf, (left, cy))
 
 
-class SoundManager:
-    """Plays event sounds via pygame.mixer with cooldown."""
-
-    SOUND_MAP = {
-        "SessionStart": "session_start",
-        "UserPromptSubmit": "task_ack",
-        "Stop": "task_done",
-        "PostToolUseFailure": "error",
-        "PermissionRequest": "input",
-        "SubagentStart": "spawn",
-        "PreCompact": "compact",
-    }
-
-    def __init__(self, sounds_dir: str, cooldown: float = 3.0, volume: float = 0.5):
-        self.sounds_dir = sounds_dir
-        self.cooldown = cooldown
-        self.volume = volume
-        self._last_play_time = 0.0
-        self._sounds: dict[str, list[pygame.mixer.Sound]] = {}
-        self._load_sounds()
-
-    def _load_sounds(self):
-        """Pre-load all .wav files grouped by prefix."""
-        for prefix in self.SOUND_MAP.values():
-            pattern = os.path.join(self.sounds_dir, f"{prefix}_*.wav")
-            files = sorted(globmod.glob(pattern))
-            sounds = []
-            for f in files:
-                try:
-                    snd = pygame.mixer.Sound(f)
-                    snd.set_volume(self.volume)
-                    sounds.append(snd)
-                except Exception:
-                    pass
-            if sounds:
-                self._sounds[prefix] = sounds
-
-    def play(self, event_name: str):
-        """Play a random sound for the given event, respecting cooldown."""
-        prefix = self.SOUND_MAP.get(event_name)
-        if not prefix:
-            return
-        now = time.time()
-        if now - self._last_play_time < self.cooldown:
-            return
-        sounds = self._sounds.get(prefix)
-        if not sounds:
-            return
-        self._last_play_time = now
-        random.choice(sounds).play()
-
-
-def install_hooks():
-    """Install Claude Code hooks that point to our hook.sh."""
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    hook_script = os.path.join(script_dir, "hook.sh")
-
-    if not os.path.exists(hook_script):
-        print(f"ERROR: hook.sh not found at {hook_script}")
-        sys.exit(1)
-
-    # Make hook.sh executable
-    os.chmod(hook_script, 0o755)
-
-    # Claude Code stores hooks in ~/.claude/settings.json
-    claude_dir = os.path.expanduser("~/.claude")
-    settings_file = os.path.join(claude_dir, "settings.json")
-
-    os.makedirs(claude_dir, exist_ok=True)
-
-    settings = {}
-    if os.path.exists(settings_file):
-        try:
-            with open(settings_file) as f:
-                settings = json.load(f)
-        except (json.JSONDecodeError, IOError):
-            pass
-
-    # Build the hooks config - one entry per event type
-    hook_events = [
-        "PreToolUse", "PostToolUse", "PostToolUseFailure",
-        "Notification", "Stop", "SubagentStart", "SubagentStop",
-        "SessionStart", "SessionEnd", "UserPromptSubmit",
-        "PreCompact", "PermissionRequest",
-    ]
-    hooks = settings.get("hooks", {})
-    for event in hook_events:
-        hooks[event] = hook_script
-
-    settings["hooks"] = hooks
-
-    with open(settings_file, "w") as f:
-        json.dump(settings, f, indent=2)
-
-    print(f"Hooks installed to {settings_file}")
-    print(f"Hook script: {hook_script}")
-    print(f"Events: {', '.join(hook_events)}")
-    print("\nStart a Claude Code session and run `python3 gui.py` to watch!")
-
-
 # Session colors - each session gets one hull color
 SESSION_COLORS = [
     "hull_acc_blue", "hull_acc_red", "hull_acc_green", "hull_acc_purple",
@@ -411,7 +307,6 @@ class AgentVisual:
 class GUI:
     def __init__(self, demo_mode: bool = False):
         pygame.init()
-        pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
         pygame.display.set_caption("Void Fortress")
         # Use a mech sprite as the window icon
         icon_sprites = create_agent_sprites("", "hull_acc_blue", scale=2)
@@ -431,9 +326,10 @@ class GUI:
         if os.path.exists(events_file):
             open(events_file, "w").close()
 
-        # Sound manager
-        sounds_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sounds")
-        self.sound_manager = SoundManager(sounds_dir)
+        # Write PID file so hook.sh knows we're running (enables sounds)
+        self._pid_file = os.path.join(self._data_dir, ".gui.pid")
+        with open(self._pid_file, "w") as f:
+            f.write(str(os.getpid()))
 
         self.sim = Simulation(demo_mode=demo_mode)
         self.agent_visuals: dict[int, AgentVisual] = {}
@@ -638,11 +534,6 @@ class GUI:
             # Update simulation
             self.sim.update()
 
-            # Play sounds for new events
-            for event_name in self.sim.recent_event_names:
-                self.sound_manager.play(event_name)
-            self.sim.recent_event_names.clear()
-
             # Check if mech arrived to build core
             self._check_pending_core()
 
@@ -717,9 +608,10 @@ class GUI:
             self._render(dt)
             self.clock.tick(FPS)
 
-        # Save on exit
+        # Save on exit and remove PID file (disables sounds)
         self.station.save()
-        pygame.mixer.quit()
+        if os.path.exists(self._pid_file):
+            os.remove(self._pid_file)
         pygame.quit()
 
     def _click_select(self, mx, my, world_h):
@@ -915,11 +807,6 @@ class GUI:
 
 def main():
     args = sys.argv[1:]
-
-    if "--install" in args:
-        install_hooks()
-        return
-
     demo = "--demo" in args
 
     gui = GUI(demo_mode=demo)
