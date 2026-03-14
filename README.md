@@ -44,24 +44,31 @@ Claw wreckers with grabber arms and welding sparks. Session color-coded — you 
 ```bash
 git clone https://github.com/klietzau280/void-fortress.git
 cd void-fortress
-pip install pygame
+
+# Install everything (pygame + Claude Code hooks)
+./install.sh
+
+# Launch the fortress
+python3 gui.py
 ```
 
+That's it. Open Claude Code in another terminal and watch the mechs build.
+
 ### Demo Mode
+
+Don't have Claude Code? Watch the mechs anyway:
+
 ```bash
 python3 gui.py --demo
 ```
 
-### Live Mode
+### Uninstall
+
 ```bash
-# Install hooks into Claude Code
-python3 gui.py --install
-
-# Launch the fortress
-python3 gui.py
-
-# Use Claude Code in another terminal — watch the mechs build
+./uninstall.sh
 ```
+
+Removes the hooks from Claude Code. Your other settings are untouched.
 
 ## Controls
 
