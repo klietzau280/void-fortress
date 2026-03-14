@@ -124,18 +124,18 @@ DEMO_BUILD_CHANCE = 0.012
 FUEL_MAX_TOOL_CALLS = 200
 FUEL_WARN_THRESHOLD = 0.5
 FUEL_CRITICAL_THRESHOLD = 0.2
-SHIELD_PANEL_WIDTH = 220
-SHIELD_BAR_HEIGHT = 14
-SHIELD_BAR_GAP = 4
-SHIELD_BAR_BORDER_RADIUS = 3
-SHIELD_MAX_BARS = 4
-SHIELD_BAR_BG = (25, 28, 42)
-SHIELD_BAR_BORDER = (50, 55, 75)
-SHIELD_BAR_NAME_COLOR = (180, 185, 200)
+SHIELD_PANEL_WIDTH = 260
+SHIELD_BAR_HEIGHT = 10
+SHIELD_ROW_HEIGHT = 26  # label + bar combined
+SHIELD_BAR_BORDER_RADIUS = 4
+SHIELD_MAX_BARS = 3
+SHIELD_BAR_BG = (20, 24, 38)
+SHIELD_BAR_BORDER = (45, 52, 72)
+SHIELD_BAR_NAME_COLOR = (160, 170, 195)
 SHIELD_BAR_PCT_COLOR = (220, 225, 240)
-SHIELD_BAR_NAME_MAX_LEN = 10
-SHIELD_EDGE_GLOW_WIDTH = 4
-SHIELD_EDGE_GLOW_ALPHA = 60
+SHIELD_BAR_NAME_MAX_LEN = 12
+SHIELD_EDGE_GLOW_WIDTH = 6
+SHIELD_EDGE_GLOW_ALPHA = 70
 SHIELD_OFFLINE_COLOR = (60, 65, 80)
 
 # -- UI panel --
@@ -1132,26 +1132,23 @@ class GUI:
         x += salvage_txt.get_width() + 20
 
         # ── Void Shields: right-anchored panel ──
-        shield_x = w - SHIELD_PANEL_WIDTH - 8
-        shield_y = world_h + 4
+        shield_x = w - SHIELD_PANEL_WIDTH - 10
+        shield_y = world_h + 6
 
         # Vertical divider separating shields from stats
         pygame.draw.line(self.screen, UI_PANEL_DIVIDER,
-                         (shield_x - 8, world_h + 4), (shield_x - 8, world_h + UI_H - 20), 1)
-
-        # Header
-        shield_label = self.font.render("VOID SHIELDS", True, cyan)
-        self.screen.blit(shield_label, (shield_x, shield_y))
+                         (shield_x - 10, world_h + 4), (shield_x - 10, world_h + UI_H - 18), 1)
 
         bars = self.sim.get_session_context_bars()
         bar_x = shield_x
         bar_w = SHIELD_PANEL_WIDTH
-        by = shield_y + 18
+        by = shield_y
 
         if bars:
             for i in range(min(len(bars), SHIELD_MAX_BARS)):
                 name, used_pct = bars[i]
                 fuel_pct = max(0.0, min(1.0, 1.0 - used_pct / 100.0))
+                remaining = int(100 - used_pct)
 
                 if fuel_pct > FUEL_WARN_THRESHOLD:
                     bar_color = PALETTE["energy_cyan"]
@@ -1160,7 +1157,14 @@ class GUI:
                 else:
                     bar_color = PALETTE["mood_WRATHFUL"]
 
-                # Background track
+                # Label row: name left, percentage right
+                name_surf = self.font.render(name[:SHIELD_BAR_NAME_MAX_LEN], True, SHIELD_BAR_NAME_COLOR)
+                pct_surf = self.font.render(f"{remaining}%", True, bar_color)
+                self.screen.blit(name_surf, (bar_x, by))
+                self.screen.blit(pct_surf, (bar_x + bar_w - pct_surf.get_width(), by))
+                by += 14
+
+                # Bar track
                 pygame.draw.rect(self.screen, SHIELD_BAR_BG,
                                  (bar_x, by, bar_w, SHIELD_BAR_HEIGHT), border_radius=SHIELD_BAR_BORDER_RADIUS)
 
@@ -1180,24 +1184,18 @@ class GUI:
                 pygame.draw.rect(self.screen, SHIELD_BAR_BORDER,
                                  (bar_x, by, bar_w, SHIELD_BAR_HEIGHT), 1, border_radius=SHIELD_BAR_BORDER_RADIUS)
 
-                # Name on the left inside the bar
-                name_surf = self.font_small.render(name[:SHIELD_BAR_NAME_MAX_LEN], True, SHIELD_BAR_NAME_COLOR)
-                self.screen.blit(name_surf, (bar_x + 4, by + 2))
-
-                # Percentage on the right inside the bar
-                pct_str = f"{int(100 - used_pct)}%"
-                pct_surf = self.font_small.render(pct_str, True, SHIELD_BAR_PCT_COLOR)
-                self.screen.blit(pct_surf, (bar_x + bar_w - pct_surf.get_width() - 4, by + 2))
-
-                by += SHIELD_BAR_HEIGHT + SHIELD_BAR_GAP
+                by += SHIELD_BAR_HEIGHT + 2
         else:
-            # No sessions — empty bar with "OFFLINE" label
+            # No sessions — show "VOID SHIELDS" header + offline bar
+            header_surf = self.font.render("VOID SHIELDS", True, cyan)
+            self.screen.blit(header_surf, (bar_x, by))
+            by += 16
             pygame.draw.rect(self.screen, SHIELD_BAR_BG,
                              (bar_x, by, bar_w, SHIELD_BAR_HEIGHT), border_radius=SHIELD_BAR_BORDER_RADIUS)
             pygame.draw.rect(self.screen, SHIELD_BAR_BORDER,
                              (bar_x, by, bar_w, SHIELD_BAR_HEIGHT), 1, border_radius=SHIELD_BAR_BORDER_RADIUS)
             offline_surf = self.font_small.render("OFFLINE", True, SHIELD_OFFLINE_COLOR)
-            self.screen.blit(offline_surf, (bar_x + bar_w // 2 - offline_surf.get_width() // 2, by + 2))
+            self.screen.blit(offline_surf, (bar_x + bar_w // 2 - offline_surf.get_width() // 2, by))
 
         # Horizontal accent divider between row 1 and row 2
         div_y = world_h + 34
