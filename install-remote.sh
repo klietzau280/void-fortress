@@ -55,8 +55,26 @@ echo ""
 chmod +x install.sh
 ./install.sh
 
-# Add convenience alias hint
+# Add void-fortress alias to shell config
+ALIAS_LINE="alias void-fortress='cd $INSTALL_DIR && python3 gui.py'"
+
+add_alias() {
+    local rc="$1"
+    if [ -f "$rc" ] && grep -q "void-fortress" "$rc" 2>/dev/null; then
+        return  # already there
+    fi
+    if [ -f "$rc" ]; then
+        echo "" >> "$rc"
+        echo "# Void Fortress" >> "$rc"
+        echo "$ALIAS_LINE" >> "$rc"
+        echo -e "  ${GREEN}✓${NC} Added alias to $rc"
+    fi
+}
+
+add_alias "$HOME/.zshrc"
+add_alias "$HOME/.bashrc"
+
 echo ""
-echo -e "  ${YELLOW}Pro tip:${NC} Add an alias to your shell config:"
-echo -e "    ${CYAN}alias void-fortress='cd $INSTALL_DIR && python3 gui.py'${NC}"
+echo -e "  ${GREEN}Run ${CYAN}void-fortress${GREEN} to launch (restart your shell or run ${CYAN}source ~/.zshrc${GREEN})${NC}"
+echo -e "  ${GREEN}Run ${CYAN}void-fortress --demo${GREEN} to try without Claude Code${NC}"
 echo ""
