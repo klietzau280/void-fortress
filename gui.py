@@ -633,11 +633,9 @@ class GUI:
 
     def _render(self, dt):
         w, h = self.screen.get_size()
-        # Fill EVERYTHING with pure black - no white, no lighter patches
-        self.screen.fill((8, 8, 18))
         world_h = h - UI_H
 
-        # Station draws its own starfield background + structures
+        # Station draws starfield background (1920x1200, covers full screen)
         self.station.draw(self.screen, self.cam_x, self.cam_y, w, world_h)
 
         # Agents (sorted by y for depth)

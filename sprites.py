@@ -595,20 +595,22 @@ def draw_space_background(width: int, height: int):
     surf = pygame.Surface((width, height))
     surf.fill(PALETTE["space_bg"])
 
-    # Nebula patches
-    for _ in range(8):
+    # Nebula patches - scale count to background size
+    nebula_count = max(8, (width * height) // 80000)
+    for _ in range(nebula_count):
         nx = random.randint(0, width)
         ny = random.randint(0, height)
-        nr = random.randint(40, 120)
+        nr = random.randint(60, 160)
         nebula_surf = pygame.Surface((nr * 2, nr * 2), pygame.SRCALPHA)
         color = random.choice([PALETTE["nebula_purple"], PALETTE["nebula_blue"]])
         for r in range(nr, 0, -2):
-            alpha = int(15 * (r / nr))
+            alpha = int(12 * (r / nr))
             pygame.draw.circle(nebula_surf, (*color, alpha), (nr, nr), r)
         surf.blit(nebula_surf, (nx - nr, ny - nr))
 
-    # Stars
-    for _ in range(200):
+    # Stars - scale count to background size
+    star_count = max(200, (width * height) // 3000)
+    for _ in range(star_count):
         sx = random.randint(0, width)
         sy = random.randint(0, height)
         brightness = random.random()
