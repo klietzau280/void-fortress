@@ -1,6 +1,6 @@
 #!/bin/bash
 # Void Fortress - hook for Claude Code
-# Logs events to JSONL (always) + plays sounds (only when GUI is running)
+# Logs events to JSONL + plays sci-fi trooper voice lines
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SOUNDS_DIR="$SCRIPT_DIR/sounds"
