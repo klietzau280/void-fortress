@@ -11,6 +11,15 @@ import time
 from dataclasses import dataclass, field
 from typing import List
 
+# -- World defaults --
+DEFAULT_WORLD_WIDTH = 80
+DEFAULT_WORLD_HEIGHT = 24
+
+# -- Notifications --
+NOTIFICATION_MAX_BUFFER = 50
+NOTIFICATION_TRIM_TO = 30
+NOTIFICATION_EXPIRY_SEC = 30.0
+
 
 @dataclass
 class Zone:
@@ -35,21 +44,23 @@ class Notification:
 class World:
     """Logical world state - zones and notifications."""
 
-    def __init__(self, width: int = 80, height: int = 24):
+    def __init__(self, width: int = DEFAULT_WORLD_WIDTH, height: int = DEFAULT_WORLD_HEIGHT):
         self.width = width
         self.height = height
         self.tick = 0
 
-        # Activity zones - rough areas where agents cluster by activity
+        # Activity zones — working agents orbit the station center,
+        # idle/waiting agents retreat to bottom-right corner
+        cx, cy = width // 2, height // 2
         self.zones = {
-            "coding":    Zone(10, 3, 20, 8),
-            "reading":   Zone(35, 3, 15, 8),
-            "searching": Zone(52, 3, 15, 8),
-            "testing":   Zone(10, 12, 20, 8),
-            "fixing":    Zone(35, 12, 15, 8),
-            "thinking":  Zone(52, 12, 15, 8),
-            "idle":      Zone(62, 16, 12, 6),
-            "waiting":   Zone(62, 16, 12, 6),
+            "coding":    Zone(cx - 8, cy - 4, 16, 8),
+            "reading":   Zone(cx - 12, cy - 6, 10, 6),
+            "searching": Zone(cx + 4, cy - 6, 10, 6),
+            "testing":   Zone(cx - 6, cy + 2, 12, 6),
+            "fixing":    Zone(cx - 4, cy - 2, 8, 4),
+            "thinking":  Zone(cx + 6, cy + 1, 10, 5),
+            "idle":      Zone(width - 16, height - 7, 12, 6),
+            "waiting":   Zone(width - 16, height - 7, 12, 6),
         }
 
         self.notifications: List[Notification] = []
@@ -60,10 +71,10 @@ class World:
     def add_notification(self, text: str, icon: str = "", color: str = ""):
         self.notifications.append(Notification(text, icon, color))
         # Keep only recent notifications
-        if len(self.notifications) > 50:
-            self.notifications = self.notifications[-30:]
+        if len(self.notifications) > NOTIFICATION_MAX_BUFFER:
+            self.notifications = self.notifications[-NOTIFICATION_TRIM_TO:]
 
     def update_notifications(self, now: float):
         # Expire old notifications (older than 30s)
-        cutoff = now - 30.0
+        cutoff = now - NOTIFICATION_EXPIRY_SEC
         self.notifications = [n for n in self.notifications if n.timestamp > cutoff]
