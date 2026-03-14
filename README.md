@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="screenshots/gameplay.png" width="700" />
+  <img src="screenshots/demo.gif" width="700" />
 </p>
 
 <h1 align="center">VOID FORTRESS</h1>
