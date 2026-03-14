@@ -80,6 +80,26 @@ GLOW_CELLS = {
 SAVE_DIR = os.path.expanduser("~/.agent-valley")
 SAVE_FILE = os.path.join(SAVE_DIR, "station.json")
 
+# -- Background --
+BG_MIN_WIDTH = 1920
+BG_MIN_HEIGHT = 1200
+
+# -- Station building --
+CORRIDOR_BALANCE_RATIO = 0.6
+
+# -- Save format --
+SAVE_VERSION = 4
+SAVE_TYPE = "station_v2"
+
+# -- Glow animation --
+WINDOW_GLOW_SPEED = 1.5
+WINDOW_GLOW_AMPLITUDE = 15
+ANTENNA_BLINK_SPEED = 2
+ENGINE_FLICKER_SPEED = 8
+ENGINE_FLICKER_AMPLITUDE = 30
+LIGHT_GLOW_SPEED = 3
+LIGHT_GLOW_AMPLITUDE = 30
+
 # Room templates - these stamp onto the grid as coherent structures
 # Each is a list of strings where chars map to cell types
 
@@ -287,8 +307,8 @@ class Station:
         # Pre-render surfaces - background covers max screen size so no tiling seams
         pw = self.GRID_W * self.CELL_PX
         ph = self.GRID_H * self.CELL_PX
-        bg_w = max(pw, 1920)  # cover up to 1920 wide
-        bg_h = max(ph, 1200)  # cover up to 1200 tall
+        bg_w = max(pw, BG_MIN_WIDTH)  # cover up to 1920 wide
+        bg_h = max(ph, BG_MIN_HEIGHT)  # cover up to 1200 tall
         self.background = draw_space_background(bg_w, bg_h)
         self._cell_cache: list[tuple] = []
 
@@ -422,7 +442,7 @@ class Station:
         room_count = sum(1 for s in self.placed_structures if s["name"] not in ("conduit_h", "conduit_v", "command_bastion"))
 
         # Balance: need corridors to connect rooms
-        if room_count > corridor_count and random.random() < 0.6:
+        if room_count > corridor_count and random.random() < CORRIDOR_BALANCE_RATIO:
             options = ["conduit_h", "conduit_v"]
 
         random.shuffle(options)
@@ -530,28 +550,28 @@ class Station:
 
                 if cell == Cell.WINDOW:
                     # Gentle window glow
-                    a = int(base_a + 15 * math.sin(now * 1.5 + x * 0.3 + y * 0.7))
+                    a = int(base_a + WINDOW_GLOW_AMPLITUDE * math.sin(now * WINDOW_GLOW_SPEED + x * 0.3 + y * 0.7))
                     glow = pygame.Surface((px + 2, px + 2), pygame.SRCALPHA)
                     glow.fill((r, g, b, max(0, min(255, a))))
                     screen.blit(glow, (sx - 1, sy - 1))
 
                 elif cell == Cell.ANTENNA_TIP:
                     # Blink
-                    if int(now * 2 + x) % 2:
+                    if int(now * ANTENNA_BLINK_SPEED + x) % 2:
                         glow = pygame.Surface((px + 4, px + 4), pygame.SRCALPHA)
                         pygame.draw.circle(glow, (r, g, b, base_a), (px // 2 + 2, px // 2 + 2), px)
                         screen.blit(glow, (sx - 2, sy - 2))
 
                 elif cell == Cell.ENGINE:
                     # Thruster flicker
-                    flicker = int(30 * math.sin(now * 8 + x * 3))
+                    flicker = int(ENGINE_FLICKER_AMPLITUDE * math.sin(now * ENGINE_FLICKER_SPEED + x * 3))
                     a = base_a + flicker
                     glow = pygame.Surface((px + 2, px + 4), pygame.SRCALPHA)
                     glow.fill((r, g, b, max(0, min(255, a))))
                     screen.blit(glow, (sx - 1, sy))
 
                 elif cell == Cell.LIGHT:
-                    a = int(base_a + 30 * math.sin(now * 3 + x + y))
+                    a = int(base_a + LIGHT_GLOW_AMPLITUDE * math.sin(now * LIGHT_GLOW_SPEED + x + y))
                     glow = pygame.Surface((px + 2, px + 2), pygame.SRCALPHA)
                     glow.fill((r, g, b, max(0, min(255, a))))
                     screen.blit(glow, (sx - 1, sy - 1))
@@ -563,7 +583,7 @@ class Station:
         os.makedirs(SAVE_DIR, exist_ok=True)
         # Save just the structure list, grid rebuilds from it
         data = {
-            "version": 4, "type": "station_v2",
+            "version": SAVE_VERSION, "type": SAVE_TYPE,
             "total_placed": self.total_placed,
             "structures": self.placed_structures,
         }
@@ -576,7 +596,7 @@ class Station:
         try:
             with open(SAVE_FILE, "r") as f:
                 data = json.load(f)
-            if data.get("type") != "station_v2":
+            if data.get("type") != SAVE_TYPE:
                 return
             for sd in data.get("structures", []):
                 name = sd.get("name")
@@ -600,8 +620,8 @@ class Station:
         self.has_core = False
         self._dirty = True
         pw, ph = self.get_pixel_size()
-        bg_w = max(pw, 1920)
-        bg_h = max(ph, 1200)
+        bg_w = max(pw, BG_MIN_WIDTH)
+        bg_h = max(ph, BG_MIN_HEIGHT)
         self.background = draw_space_background(bg_w, bg_h)
         self._cell_cache = []
         if os.path.exists(SAVE_FILE):

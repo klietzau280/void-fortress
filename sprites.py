@@ -79,6 +79,73 @@ HULL_COLORS = [
     "hull_acc_orange", "hull_acc_cyan", "hull_acc_yellow", "hull_acc_dark",
 ]
 
+# -- Mech rendering --
+MECH_HULL_HIGHLIGHT_SHIFT = 40
+MECH_HULL_SHADOW_SHIFT = 35
+MECH_CLAW_HIGHLIGHT = (180, 180, 195)
+MECH_CLAW_SHADOW = (110, 112, 125)
+MECH_SPARK_DIM = (200, 100, 20)
+
+# -- Mood icon --
+MOOD_ICON_DEFAULT_SIZE = 16
+
+# -- Star drawing --
+STAR_POINTS = 5
+STAR_INNER_RATIO = 0.4
+STAR_ANGLE_OFFSET = -90
+
+# -- Thought bubble --
+BUBBLE_PADDING_X = 16
+BUBBLE_PADDING_Y = 12
+BUBBLE_BG_COLOR = (20, 20, 40, 220)
+BUBBLE_BORDER_COLOR = (80, 80, 120)
+BUBBLE_TEXT_COLOR = (200, 210, 230)
+BUBBLE_CORNER_RADIUS = 6
+BUBBLE_TEXT_OFFSET_X = 8
+BUBBLE_TEXT_OFFSET_Y = 6
+BUBBLE_TAIL_RADIUS_LARGE = 3
+BUBBLE_TAIL_RADIUS_SMALL = 2
+
+# -- Space background --
+NEBULA_DENSITY = 80000
+NEBULA_RADIUS_MIN = 60
+NEBULA_RADIUS_MAX = 160
+NEBULA_ALPHA_BASE = 12
+STAR_DENSITY = 3000
+STAR_BRIGHT_THRESHOLD = 0.95
+STAR_WARM_THRESHOLD = 0.80
+STAR_BRIGHT_SIZE = 2
+STAR_DIM_SIZE = 1
+
+# -- Path tile --
+PATH_GRATING_SPACING = 6
+
+# -- Pilot portrait --
+PORTRAIT_WIDTH = 31
+PORTRAIT_HEIGHT = 33
+
+# -- Portrait skin ramp --
+SKIN_RAMP = [
+    (62, 35, 28),
+    (95, 55, 38),
+    (130, 82, 55),
+    (168, 115, 78),
+    (195, 145, 100),
+    (218, 178, 132),
+    (235, 205, 165),
+]
+SKIN_RAMP_MAX = len(SKIN_RAMP) - 1
+
+# -- Portrait feature colors --
+EYE_WHITE = (210, 210, 215)
+PUPIL_COLOR = (18, 15, 12)
+MOUTH_DARK = (45, 25, 22)
+TEETH_COLOR = (200, 195, 185)
+BLOOD_COLOR = (160, 30, 25)
+
+# -- Visor --
+VISOR_HIGHLIGHT_SHIFT = 60
+
 
 # --- Claw Wrecker sprites ---
 # Industrial construction mechs with grabber arms.
@@ -183,12 +250,12 @@ def _render_mech(template, hull_color_name, scale=3):
     surf = pygame.Surface((w, h), pygame.SRCALPHA)
 
     hull = PALETTE[hull_color_name]
-    hull_hi = tuple(min(255, c + 40) for c in hull)
-    hull_dk = tuple(max(0, c - 35) for c in hull)
+    hull_hi = tuple(min(255, c + MECH_HULL_HIGHLIGHT_SHIFT) for c in hull)
+    hull_dk = tuple(max(0, c - MECH_HULL_SHADOW_SHIFT) for c in hull)
 
     # Claws are always steel/iron regardless of hull color
-    claw_hi = (180, 180, 195)
-    claw_dk = (110, 112, 125)
+    claw_hi = MECH_CLAW_HIGHLIGHT
+    claw_dk = MECH_CLAW_SHADOW
 
     color_map = {
         "h": hull_hi,
@@ -203,7 +270,7 @@ def _render_mech(template, hull_color_name, scale=3):
         "E": PALETTE["metal"],
         "e": PALETTE["metal_dark"],
         "F": PALETTE["flame_orange"],
-        "f": (200, 100, 20),
+        "f": MECH_SPARK_DIM,
         "Y": PALETTE["flame_yellow"],
         ".": None,
     }
@@ -272,11 +339,11 @@ def create_mood_icon(mood_name: str, size: int = 16):
 
 def _draw_star(surf, cx, cy, r, color):
     points = []
-    for i in range(5):
-        angle = math.radians(i * 72 - 90)
+    for i in range(STAR_POINTS):
+        angle = math.radians(i * (360 // STAR_POINTS) + STAR_ANGLE_OFFSET)
         points.append((cx + int(r * math.cos(angle)), cy + int(r * math.sin(angle))))
-        angle2 = math.radians(i * 72 + 36 - 90)
-        points.append((cx + int(r * 0.4 * math.cos(angle2)), cy + int(r * 0.4 * math.sin(angle2))))
+        angle2 = math.radians(i * (360 // STAR_POINTS) + (360 // STAR_POINTS // 2) + STAR_ANGLE_OFFSET)
+        points.append((cx + int(r * STAR_INNER_RATIO * math.cos(angle2)), cy + int(r * STAR_INNER_RATIO * math.sin(angle2))))
     if len(points) >= 3:
         pygame.draw.polygon(surf, color, points)
 
@@ -554,7 +621,7 @@ def create_thought_bubble(text: str, font: pygame.font.Font, max_width: int = 20
     current = ""
     for word in words:
         test = f"{current} {word}".strip()
-        if font.size(test)[0] <= max_width - 16:
+        if font.size(test)[0] <= max_width - BUBBLE_PADDING_X:
             current = test
         else:
             if current:
@@ -567,22 +634,22 @@ def create_thought_bubble(text: str, font: pygame.font.Font, max_width: int = 20
 
     line_height = font.get_linesize()
     text_h = line_height * len(lines)
-    bubble_w = max(font.size(line)[0] for line in lines) + 16
-    bubble_h = text_h + 12
+    bubble_w = max(font.size(line)[0] for line in lines) + BUBBLE_PADDING_X
+    bubble_h = text_h + BUBBLE_PADDING_Y
 
     surf = pygame.Surface((bubble_w, bubble_h + 10), pygame.SRCALPHA)
     bubble_rect = pygame.Rect(0, 0, bubble_w, bubble_h)
-    pygame.draw.rect(surf, (20, 20, 40, 220), bubble_rect, border_radius=6)
-    pygame.draw.rect(surf, (80, 80, 120), bubble_rect, 1, border_radius=6)
+    pygame.draw.rect(surf, BUBBLE_BG_COLOR, bubble_rect, border_radius=BUBBLE_CORNER_RADIUS)
+    pygame.draw.rect(surf, BUBBLE_BORDER_COLOR, bubble_rect, 1, border_radius=BUBBLE_CORNER_RADIUS)
 
-    pygame.draw.circle(surf, (20, 20, 40, 220), (bubble_w // 2, bubble_h + 3), 3)
-    pygame.draw.circle(surf, (80, 80, 120), (bubble_w // 2, bubble_h + 3), 3, 1)
-    pygame.draw.circle(surf, (20, 20, 40, 220), (bubble_w // 2 + 2, bubble_h + 7), 2)
-    pygame.draw.circle(surf, (80, 80, 120), (bubble_w // 2 + 2, bubble_h + 7), 2, 1)
+    pygame.draw.circle(surf, BUBBLE_BG_COLOR, (bubble_w // 2, bubble_h + 3), BUBBLE_TAIL_RADIUS_LARGE)
+    pygame.draw.circle(surf, BUBBLE_BORDER_COLOR, (bubble_w // 2, bubble_h + 3), BUBBLE_TAIL_RADIUS_LARGE, 1)
+    pygame.draw.circle(surf, BUBBLE_BG_COLOR, (bubble_w // 2 + 2, bubble_h + 7), BUBBLE_TAIL_RADIUS_SMALL)
+    pygame.draw.circle(surf, BUBBLE_BORDER_COLOR, (bubble_w // 2 + 2, bubble_h + 7), BUBBLE_TAIL_RADIUS_SMALL, 1)
 
     for i, line in enumerate(lines):
-        txt = font.render(line, True, (200, 210, 230))
-        surf.blit(txt, (8, 6 + i * line_height))
+        txt = font.render(line, True, BUBBLE_TEXT_COLOR)
+        surf.blit(txt, (BUBBLE_TEXT_OFFSET_X, BUBBLE_TEXT_OFFSET_Y + i * line_height))
 
     return surf
 
@@ -595,33 +662,33 @@ def draw_space_background(width: int, height: int):
     surf.fill(PALETTE["space_bg"])
 
     # Nebula patches - scale count to background size
-    nebula_count = max(8, (width * height) // 80000)
+    nebula_count = max(8, (width * height) // NEBULA_DENSITY)
     for _ in range(nebula_count):
         nx = random.randint(0, width)
         ny = random.randint(0, height)
-        nr = random.randint(60, 160)
+        nr = random.randint(NEBULA_RADIUS_MIN, NEBULA_RADIUS_MAX)
         nebula_surf = pygame.Surface((nr * 2, nr * 2), pygame.SRCALPHA)
         color = random.choice([PALETTE["nebula_purple"], PALETTE["nebula_blue"]])
         for r in range(nr, 0, -2):
-            alpha = int(12 * (r / nr))
+            alpha = int(NEBULA_ALPHA_BASE * (r / nr))
             pygame.draw.circle(nebula_surf, (*color, alpha), (nr, nr), r)
         surf.blit(nebula_surf, (nx - nr, ny - nr))
 
     # Stars - scale count to background size
-    star_count = max(200, (width * height) // 3000)
+    star_count = max(200, (width * height) // STAR_DENSITY)
     for _ in range(star_count):
         sx = random.randint(0, width)
         sy = random.randint(0, height)
         brightness = random.random()
-        if brightness > 0.95:
+        if brightness > STAR_BRIGHT_THRESHOLD:
             color = PALETTE["star_bright"]
-            size = 2
-        elif brightness > 0.8:
+            size = STAR_BRIGHT_SIZE
+        elif brightness > STAR_WARM_THRESHOLD:
             color = PALETTE["star_warm"]
-            size = 1
+            size = STAR_DIM_SIZE
         else:
             color = PALETTE["star_dim"]
-            size = 1
+            size = STAR_DIM_SIZE
         pygame.draw.rect(surf, color, (sx, sy, size, size))
 
     return surf
@@ -633,9 +700,9 @@ def draw_path_tile(surf, x, y, tile_w, tile_h):
     py = y * tile_h
     pygame.draw.rect(surf, PALETTE["path"], (px, py, tile_w, tile_h))
     # Grating lines
-    for gx in range(0, tile_w, 6):
+    for gx in range(0, tile_w, PATH_GRATING_SPACING):
         pygame.draw.line(surf, PALETTE["path_dark"], (px + gx, py), (px + gx, py + tile_h), 1)
-    for gy in range(0, tile_h, 6):
+    for gy in range(0, tile_h, PATH_GRATING_SPACING):
         pygame.draw.line(surf, PALETTE["path_dark"], (px, py + gy), (px + tile_w, py + gy), 1)
 
 
@@ -652,23 +719,8 @@ def draw_path_tile(surf, x, y, tile_w, tile_h):
 
 _portrait_cache = {}
 
-# Skin ramp: dark shadow → shadow → mid-shadow → mid → mid-light → light → highlight
-_SKIN = [
-    (62, 35, 28),    # 0: deep shadow (under brow, jaw edge)
-    (95, 55, 38),    # 1: shadow (eye socket, side of nose)
-    (130, 82, 55),   # 2: mid-shadow (cheeks shadow side)
-    (168, 115, 78),  # 3: midtone (most of face)
-    (195, 145, 100),  # 4: mid-light (forehead, cheek highlight)
-    (218, 178, 132),  # 5: light (nose bridge, brow bone)
-    (235, 205, 165),  # 6: highlight (forehead peak, nose tip)
-]
-
-# Feature colors
-_EYE_WHITE = (210, 210, 215)
-_PUPIL = (18, 15, 12)
-_MOUTH_DARK = (45, 25, 22)
-_TEETH = (200, 195, 185)
-_BLOOD = (160, 30, 25)
+# Skin ramp and feature colors are defined as module-level constants above:
+# SKIN_RAMP, SKIN_RAMP_MAX, EYE_WHITE, PUPIL_COLOR, MOUTH_DARK, TEETH_COLOR, BLOOD_COLOR
 
 # Each portrait is a 31-wide array of rows. Values map to:
 #  0-6 = skin ramp
@@ -680,7 +732,7 @@ _BLOOD = (160, 30, 25)
 
 def _make_face(helmet_h, helmet_m, helmet_d, visor_color=None):
     """Paint a 31x33 Doom-style face onto a surface."""
-    W, H = 31, 33
+    W, H = PORTRAIT_WIDTH, PORTRAIT_HEIGHT
     surf = pygame.Surface((W, H), pygame.SRCALPHA)
 
     # Helper to draw a pixel
@@ -694,7 +746,7 @@ def _make_face(helmet_h, helmet_m, helmet_d, visor_color=None):
                 px(x + dx, y + dy, color)
 
     def skin(x, y, level):
-        px(x, y, _SKIN[min(6, max(0, level))])
+        px(x, y, SKIN_RAMP[min(SKIN_RAMP_MAX, max(0, level))])
 
     # --- HELMET (rows 0-9) ---
     # Rounded top silhouette
@@ -738,12 +790,12 @@ def _make_face(helmet_h, helmet_m, helmet_d, visor_color=None):
     # White
     for ey in range(13, 15):
         for ex in range(8, 13):
-            px(ex, ey, _EYE_WHITE)
+            px(ex, ey, EYE_WHITE)
     # Pupil - 2 dark pixels
-    px(10, 13, _PUPIL)
-    px(11, 13, _PUPIL)
-    px(10, 14, _PUPIL)
-    px(11, 14, _PUPIL)
+    px(10, 13, PUPIL_COLOR)
+    px(11, 13, PUPIL_COLOR)
+    px(10, 14, PUPIL_COLOR)
+    px(11, 14, PUPIL_COLOR)
     # Eyelid shadow above
     for ex in range(8, 13):
         skin(ex, 12, 0)
@@ -751,11 +803,11 @@ def _make_face(helmet_h, helmet_m, helmet_d, visor_color=None):
     # RIGHT EYE (centered around x=21, rows 12-14)
     for ey in range(13, 15):
         for ex in range(18, 23):
-            px(ex, ey, _EYE_WHITE)
-    px(19, 13, _PUPIL)
-    px(20, 13, _PUPIL)
-    px(19, 14, _PUPIL)
-    px(20, 14, _PUPIL)
+            px(ex, ey, EYE_WHITE)
+    px(19, 13, PUPIL_COLOR)
+    px(20, 13, PUPIL_COLOR)
+    px(19, 14, PUPIL_COLOR)
+    px(20, 14, PUPIL_COLOR)
     for ex in range(18, 23):
         skin(ex, 12, 0)
 
@@ -790,7 +842,7 @@ def _make_face(helmet_h, helmet_m, helmet_d, visor_color=None):
 
     # Mouth line
     for ex in range(10, 21):
-        px(ex, 22, _MOUTH_DARK)
+        px(ex, 22, MOUTH_DARK)
     # Upper lip shadow
     for ex in range(11, 20):
         skin(ex, 21, 2)
@@ -820,7 +872,7 @@ def _make_face(helmet_h, helmet_m, helmet_d, visor_color=None):
                 x = 4 + dx
                 px(x, row, visor_color)
         # Visor highlight
-        bright = tuple(min(255, c + 60) for c in visor_color)
+        bright = tuple(min(255, c + VISOR_HIGHLIGHT_SHIFT) for c in visor_color)
         for dx in range(5):
             px(8 + dx, 13, bright)
 
