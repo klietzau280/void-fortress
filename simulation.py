@@ -207,9 +207,19 @@ class Simulation:
                 agent = next((a for a in self.agents if a.id == sim_id), None)
                 if agent:
                     if notify:
+                        necron_kills = [
+                            f"NECRON AMBUSH! {agent.name} destroyed!",
+                            f"{agent.name} vaporized by gauss flayer!",
+                            f"Tomb Wraith claimed {agent.name}!",
+                            f"{agent.name} fell to Necron fire!",
+                            f"Deathmark targeted {agent.name}. No survivors.",
+                            f"Scarabs consumed {agent.name}'s mech!",
+                            f"{agent.name} phased out — Necron translocation!",
+                            f"Doomsday beam hit {agent.name}!",
+                        ]
                         self.world.add_notification(
-                            f"{agent.name} finished work ({agent.tasks_completed} tasks)",
-                            "👋", "\033[93m",
+                            random.choice(necron_kills),
+                            "💀", "\033[91m",
                         )
                     self.agents.remove(agent)
 

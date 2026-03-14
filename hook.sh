@@ -55,6 +55,7 @@ case "$EVENT" in
     PostToolUseFailure) SOUND=$(pick_random "error") ;;
     PermissionRequest)  SOUND=$(pick_random "input") ;;
     SubagentStart)      SOUND=$(pick_random "spawn") ;;
+    SubagentStop)       SOUND=$(pick_random "explosion") ;;
     PreCompact)         SOUND=$(pick_random "compact") ;;
 esac
 

@@ -28,6 +28,74 @@ WINDOW_H = 640
 FPS = 30
 UI_H = 110
 
+# Explosion colors — Necron gauss green + fire
+EXPLOSION_COLORS = [
+    (80, 255, 80),    # necron green
+    (50, 220, 50),    # dark green
+    (160, 255, 80),   # yellow-green
+    (255, 200, 50),   # fire yellow
+    (255, 140, 30),   # fire orange
+    (255, 60, 20),    # fire red
+    (200, 255, 200),  # bright green flash
+]
+
+
+class Explosion:
+    """Necron gauss explosion particle effect."""
+
+    def __init__(self, px: float, py: float):
+        self.px = px
+        self.py = py
+        self.age = 0.0
+        self.lifetime = 1.8
+        self.particles: list[dict] = []
+
+        # Spawn particles
+        for _ in range(45):
+            angle = random.uniform(0, 2 * math.pi)
+            speed = random.uniform(40, 200)
+            self.particles.append({
+                "x": 0.0, "y": 0.0,
+                "vx": math.cos(angle) * speed,
+                "vy": math.sin(angle) * speed,
+                "size": random.randint(2, 6),
+                "color": random.choice(EXPLOSION_COLORS),
+                "drag": random.uniform(0.92, 0.97),
+            })
+
+    @property
+    def done(self):
+        return self.age >= self.lifetime
+
+    def update(self, dt: float):
+        self.age += dt
+        for p in self.particles:
+            p["x"] += p["vx"] * dt
+            p["y"] += p["vy"] * dt
+            p["vx"] *= p["drag"]
+            p["vy"] *= p["drag"]
+
+    def draw(self, screen: pygame.Surface, cam_x: float, cam_y: float):
+        fade = max(0.0, 1.0 - self.age / self.lifetime)
+        # Flash on first frames
+        if self.age < 0.1:
+            flash_r = int(30 * (1.0 - self.age / 0.1))
+            flash = pygame.Surface((flash_r * 2, flash_r * 2), pygame.SRCALPHA)
+            pygame.draw.circle(flash, (80, 255, 80, int(120 * fade)),
+                               (flash_r, flash_r), flash_r)
+            screen.blit(flash, (int(self.px - cam_x - flash_r),
+                                int(self.py - cam_y - flash_r)))
+
+        for p in self.particles:
+            alpha = int(255 * fade)
+            sx = int(self.px + p["x"] - cam_x)
+            sy = int(self.py + p["y"] - cam_y)
+            size = max(1, int(p["size"] * fade))
+            r, g, b = p["color"]
+            dot = pygame.Surface((size * 2, size * 2), pygame.SRCALPHA)
+            pygame.draw.circle(dot, (r, g, b, alpha), (size, size), size)
+            screen.blit(dot, (sx - size, sy - size))
+
 
 class InfoPopup:
     """Pilot dossier popup when you click a mech."""
@@ -336,6 +404,7 @@ class GUI:
         self.mood_icons: dict[str, pygame.Surface] = {}
         self._session_colors: dict[int, str] = {}  # session_key -> hull color
         self._pending_core = None  # queued core build waiting for mech arrival
+        self.explosions: list[Explosion] = []
 
         # The station - grows as agents work
         self.station = Station()
@@ -460,6 +529,9 @@ class GUI:
         alive_ids = {a.id for a in self.sim.agents}
         dead = [k for k in self.agent_visuals if k not in alive_ids]
         for k in dead:
+            vis = self.agent_visuals[k]
+            # Spawn explosion at the dead agent's position
+            self.explosions.append(Explosion(vis.px, vis.py))
             del self.agent_visuals[k]
         if self.info_popup.visible and self.info_popup.agent_id not in alive_ids:
             self.info_popup.hide()
@@ -577,6 +649,11 @@ class GUI:
 
             self._cleanup_visuals()
 
+            # Update explosions
+            for exp in self.explosions:
+                exp.update(dt)
+            self.explosions = [e for e in self.explosions if not e.done]
+
             # Notifications - only process NEW ones by index
             all_notifs = self.sim.world.notifications
             if len(all_notifs) > self._seen_notif_count:
@@ -646,6 +723,10 @@ class GUI:
             if vis:
                 vis.draw(self.screen, agent, self.mood_icons,
                          agent.id == selected_id, self.cam_x, self.cam_y)
+
+        # Explosions (drawn on top of agents)
+        for exp in self.explosions:
+            exp.draw(self.screen, self.cam_x, self.cam_y)
 
         # Waiting overlay
         if not self.sim.agents and self.sim.waiting_for_events:
