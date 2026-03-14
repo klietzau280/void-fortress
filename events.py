@@ -11,6 +11,10 @@ from typing import List, Optional
 
 EVENTS_FILE = os.path.expanduser("~/.agent-valley/events.jsonl")
 
+# -- Text truncation --
+COMMAND_TRUNCATE_LEN = 50
+SEARCH_TRUNCATE_LEN = 30
+
 
 @dataclass
 class HookEvent:
@@ -26,10 +30,22 @@ class HookEvent:
     cwd: Optional[str] = None
     prompt: Optional[str] = None
     error: Optional[str] = None
+    context_window_pct: Optional[float] = None  # 0-100 from Claude Code
     raw: Optional[dict] = None
 
     @classmethod
     def from_json(cls, data: dict) -> HookEvent:
+        # Extract context window usage if present
+        ctx_pct = None
+        ctx = data.get("context_window")
+        if isinstance(ctx, dict):
+            raw_pct = ctx.get("used_percentage")
+            if raw_pct is not None:
+                try:
+                    ctx_pct = float(raw_pct)
+                except (ValueError, TypeError):
+                    pass
+
         return cls(
             timestamp=data.get("_ts", time.time()),
             event_name=data.get("hook_event_name", "unknown"),
@@ -43,6 +59,7 @@ class HookEvent:
             cwd=data.get("cwd"),
             prompt=data.get("prompt"),
             error=data.get("error"),
+            context_window_pct=ctx_pct,
             raw=data,
         )
 
@@ -104,7 +121,7 @@ def tool_to_description(tool_name: Optional[str], tool_input: Optional[dict]) ->
         if desc:
             return desc
         # Truncate long commands
-        return f"$ {cmd[:50]}..." if len(cmd) > 50 else f"$ {cmd}"
+        return f"$ {cmd[:COMMAND_TRUNCATE_LEN]}..." if len(cmd) > COMMAND_TRUNCATE_LEN else f"$ {cmd}"
 
     if tool_name == "Read":
         path = inp.get("file_path", "???")
@@ -120,11 +137,11 @@ def tool_to_description(tool_name: Optional[str], tool_input: Optional[dict]) ->
 
     if tool_name == "Grep":
         pattern = inp.get("pattern", "???")
-        return f'Searching for "{pattern[:30]}"'
+        return f'Searching for "{pattern[:SEARCH_TRUNCATE_LEN]}"'
 
     if tool_name == "Glob":
         pattern = inp.get("pattern", "???")
-        return f"Finding files: {pattern[:30]}"
+        return f"Finding files: {pattern[:SEARCH_TRUNCATE_LEN]}"
 
     if tool_name == "Agent":
         desc = inp.get("description", "")

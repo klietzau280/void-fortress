@@ -11,6 +11,59 @@ from events import (
     SUBAGENT_ROLE_MAP,
 )
 
+# -- Bootstrap --
+BOOTSTRAP_EVENT_LIMIT = 100
+BOOTSTRAP_REPLAY_COUNT = 20
+
+# -- Agent spawning --
+SESSION_SPAWN_X_RANGE = (5, 40)
+SESSION_SPAWN_Y_RANGE = (4, 15)
+SUBAGENT_OFFSET_X = 5
+SUBAGENT_OFFSET_Y = 3
+
+# -- Zone movement --
+ZONE_OFFSET_X = 3
+ZONE_OFFSET_Y = 2
+ZONE_CLAMP_MARGIN_X = 10
+ZONE_CLAMP_MARGIN_Y = 6
+
+# -- Task completion --
+TASK_COMPLETE_CHANCE = 0.15
+
+# -- Error handling --
+NECRON_PANIC_CHANCE = 0.5
+ERROR_THOUGHT_TIMER = 5.0
+
+# -- Prompt display --
+PROMPT_TRUNCATE_LEN = 35
+PROMPT_THOUGHT_TIMER = 5.0
+
+# -- Idle behavior --
+IDLE_ZONE_PROXIMITY_X = 5
+IDLE_ZONE_PROXIMITY_Y = 4
+IDLE_OFFSET_RANGE = 2
+IDLE_CLAMP_MARGIN = 4
+
+# -- Wandering --
+WANDER_CHANCE = 0.02
+WANDER_MAX_X = 65
+WANDER_MAX_Y = 22
+
+# -- Thought refresh --
+THOUGHT_TIMER_MIN = 3.0
+THOUGHT_TIMER_MAX = 7.0
+MOVE_TICK_DIVISOR = 3
+
+# -- Satisfaction --
+SATISFACTION_SMOOTHING = 0.9
+SATISFACTION_NEW_WEIGHT = 0.1
+
+# -- Demo mode --
+DEMO_TICK_CHANCE = 0.03
+DEMO_SPAWN_CHANCE = 0.08
+DEMO_MAX_AGENTS = 8
+DEMO_DESPAWN_CHANCE = 0.05
+
 
 # Map activity to mood tendencies
 ACTIVITY_MOOD_WEIGHTS = {
@@ -46,6 +99,7 @@ class Simulation:
         self.event_reader = EventReader()
         self.active_sessions: dict[str, int] = {}  # session_id -> agent_id
         self.subagent_map: dict[str, int] = {}  # agent_id (hook) -> agent_id (sim)
+        self.session_context_pct: dict[str, float] = {}  # session_id -> last known ctx %
         self.last_event_time: float = 0
         self.waiting_for_events = True
 
@@ -59,7 +113,7 @@ class Simulation:
 
     def _bootstrap_from_recent(self):
         """Read recent events to reconstruct current state."""
-        events = self.event_reader.read_recent_events(100)
+        events = self.event_reader.read_recent_events(BOOTSTRAP_EVENT_LIMIT)
         if not events:
             self.waiting_for_events = True
             return
@@ -81,7 +135,7 @@ class Simulation:
             self._ensure_session_agent(sid)
 
         # Replay recent tool uses to set current activity
-        for e in events[-20:]:
+        for e in events[-BOOTSTRAP_REPLAY_COUNT:]:
             if e.session_id in still_active:
                 self._process_event(e, notify=False)
 
@@ -105,8 +159,8 @@ class Simulation:
         agent.is_subagent = False
         agent.activity = "thinking"
         agent.thought = "Starting up..."
-        agent.x = random.randint(5, 40)
-        agent.y = random.randint(4, 15)
+        agent.x = random.randint(*SESSION_SPAWN_X_RANGE)
+        agent.y = random.randint(*SESSION_SPAWN_Y_RANGE)
         agent.target_x = agent.x
         agent.target_y = agent.y
         self.agents.append(agent)
@@ -130,10 +184,10 @@ class Simulation:
         if parent_id is not None:
             parent = next((a for a in self.agents if a.id == parent_id), None)
         if parent:
-            agent.x = parent.x + random.randint(-5, 5)
-            agent.y = parent.y + random.randint(-3, 3)
-            agent.x = max(2, min(self.world.width - 10, agent.x))
-            agent.y = max(2, min(self.world.height - 6, agent.y))
+            agent.x = parent.x + random.randint(-SUBAGENT_OFFSET_X, SUBAGENT_OFFSET_X)
+            agent.y = parent.y + random.randint(-SUBAGENT_OFFSET_Y, SUBAGENT_OFFSET_Y)
+            agent.x = max(2, min(self.world.width - ZONE_CLAMP_MARGIN_X, agent.x))
+            agent.y = max(2, min(self.world.height - ZONE_CLAMP_MARGIN_Y, agent.y))
 
         agent.activity = "thinking"
         agent.thought = f"Spawned as {subagent_type}..."
@@ -163,9 +217,39 @@ class Simulation:
 
         return None
 
+    def get_worst_context_pct(self) -> float | None:
+        """Return the highest context window usage across active sessions, or None."""
+        if not self.session_context_pct:
+            return None
+        active_pcts = [self.session_context_pct[sid]
+                       for sid in self.active_sessions
+                       if sid in self.session_context_pct]
+        return max(active_pcts) if active_pcts else None
+
+    def get_session_context_bars(self) -> list[tuple[str, float]]:
+        """Return list of (agent_name, used_pct) for active sessions with context data."""
+        bars = []
+        for sid, agent_id in self.active_sessions.items():
+            if sid not in self.session_context_pct:
+                continue
+            pct = self.session_context_pct[sid]
+            name = "???"
+            for a in self.agents:
+                if a.id == agent_id:
+                    name = a.name
+                    break
+            bars.append((name, pct))
+        # Sort by usage descending so hottest session is first
+        bars.sort(key=lambda b: b[1], reverse=True)
+        return bars
+
     def _process_event(self, event: HookEvent, notify: bool = True):
         """Process a single hook event and update simulation state."""
         self.last_event_time = event.timestamp
+
+        # Track context window usage per session
+        if event.context_window_pct is not None and event.session_id:
+            self.session_context_pct[event.session_id] = event.context_window_pct
 
         if event.event_name == "SessionStart":
             agent = self._ensure_session_agent(event.session_id)
@@ -190,6 +274,7 @@ class Simulation:
                     )
                 self.agents.remove(agent)
                 self.active_sessions.pop(event.session_id, None)
+                self.session_context_pct.pop(event.session_id, None)
 
         elif event.event_name == "SubagentStart":
             agent = self._spawn_subagent_for_event(event)
@@ -242,10 +327,10 @@ class Simulation:
             if activity not in ("coding", "fixing", "testing"):
                 zone = self.world.get_zone_for_activity(activity)
                 cx, cy = zone.center()
-                agent.target_x = cx + random.randint(-3, 3)
-                agent.target_y = cy + random.randint(-2, 2)
-                agent.target_x = max(2, min(self.world.width - 10, agent.target_x))
-                agent.target_y = max(2, min(self.world.height - 6, agent.target_y))
+                agent.target_x = cx + random.randint(-ZONE_OFFSET_X, ZONE_OFFSET_X)
+                agent.target_y = cy + random.randint(-ZONE_OFFSET_Y, ZONE_OFFSET_Y)
+                agent.target_x = max(2, min(self.world.width - ZONE_CLAMP_MARGIN_X, agent.target_x))
+                agent.target_y = max(2, min(self.world.height - ZONE_CLAMP_MARGIN_Y, agent.target_y))
 
             # Update mood based on activity
             mood_options = ACTIVITY_MOOD_WEIGHTS.get(activity, [Mood.THINKING])
@@ -254,7 +339,7 @@ class Simulation:
 
             if event.event_name == "PostToolUse":
                 self.total_tool_calls += 1
-                if random.random() < 0.15:
+                if random.random() < TASK_COMPLETE_CHANCE:
                     agent.tasks_completed += 1
                     self.total_tasks_completed += 1
 
@@ -271,7 +356,7 @@ class Simulation:
             agent = self._find_agent_for_event(event)
             if agent:
                 # Necron incursion on errors
-                if random.random() < 0.5:
+                if random.random() < NECRON_PANIC_CHANCE:
                     agent.activity = "panicking"
                     agent.mood = Mood.PANICKING
                     agent.thought = random.choice(THOUGHTS["panicking"])
@@ -279,7 +364,7 @@ class Simulation:
                     agent.activity = "fixing"
                     agent.mood = Mood.FRUSTRATED
                     agent.thought = random.choice(THOUGHTS["fixing"])
-                agent.thought_timer = 5.0
+                agent.thought_timer = ERROR_THOUGHT_TIMER
                 self.incidents += 1
                 necron_alerts = [
                     f"NECRON INCURSION! {agent.name} under attack!",
@@ -303,10 +388,10 @@ class Simulation:
             agent.mood = Mood.FOCUSED
             prompt = event.prompt or ""
             if prompt:
-                agent.thought = f'User: "{prompt[:35]}..."' if len(prompt) > 35 else f'User: "{prompt}"'
+                agent.thought = f'User: "{prompt[:PROMPT_TRUNCATE_LEN]}..."' if len(prompt) > PROMPT_TRUNCATE_LEN else f'User: "{prompt}"'
             else:
                 agent.thought = "New instructions received!"
-            agent.thought_timer = 5.0
+            agent.thought_timer = PROMPT_THOUGHT_TIMER
             if notify:
                 self.world.add_notification(
                     "New user prompt received",
@@ -364,14 +449,14 @@ class Simulation:
 
         # Update agent animations
         for agent in self.agents:
-            if self.world.tick % 3 == 0:
+            if self.world.tick % MOVE_TICK_DIVISOR == 0:
                 agent.move_toward_target()
 
             # Thought bubble decay
             agent.thought_timer -= dt
             if agent.thought_timer <= 0:
                 agent.thought = random.choice(THOUGHTS.get(agent.activity, THOUGHTS["idle"]))
-                agent.thought_timer = random.uniform(3.0, 7.0)
+                agent.thought_timer = random.uniform(THOUGHT_TIMER_MIN, THOUGHT_TIMER_MAX)
 
             # Gradual mood drift
             agent.update_mood(dt)
@@ -380,18 +465,18 @@ class Simulation:
             if agent.activity in ("idle", "waiting"):
                 idle_zone = self.world.get_zone_for_activity("idle")
                 zx, zy = idle_zone.center()
-                if abs(agent.target_x - zx) > 5 or abs(agent.target_y - zy) > 4:
-                    agent.target_x = zx + random.randint(-2, 2)
+                if abs(agent.target_x - zx) > IDLE_ZONE_PROXIMITY_X or abs(agent.target_y - zy) > IDLE_ZONE_PROXIMITY_Y:
+                    agent.target_x = zx + random.randint(-IDLE_OFFSET_RANGE, IDLE_OFFSET_RANGE)
                     agent.target_y = zy + random.randint(-1, 1)
-                    agent.target_x = max(2, min(self.world.width - 4, agent.target_x))
-                    agent.target_y = max(2, min(self.world.height - 4, agent.target_y))
+                    agent.target_x = max(2, min(self.world.width - IDLE_CLAMP_MARGIN, agent.target_x))
+                    agent.target_y = max(2, min(self.world.height - IDLE_CLAMP_MARGIN, agent.target_y))
             # Build activities stay put (GUI positions them at the station)
             elif agent.activity in ("coding", "fixing", "testing"):
                 pass
             # Other active agents wander within their zone
             elif (agent.x == agent.target_x and agent.y == agent.target_y
-                    and random.random() < 0.02):
-                agent.set_new_wander_target(min(self.world.width, 65), min(self.world.height, 22))
+                    and random.random() < WANDER_CHANCE):
+                agent.set_new_wander_target(min(self.world.width, WANDER_MAX_X), min(self.world.height, WANDER_MAX_Y))
 
         # Update notifications
         self.world.update_notifications(now)
@@ -400,10 +485,10 @@ class Simulation:
         if self.agents:
             moods = [a.mood for a in self.agents]
             happy = sum(1 for m in moods if m in (Mood.HAPPY, Mood.ECSTATIC, Mood.FOCUSED))
-            self.agent_satisfaction = 0.9 * self.agent_satisfaction + 0.1 * (happy / len(moods))
+            self.agent_satisfaction = SATISFACTION_SMOOTHING * self.agent_satisfaction + SATISFACTION_NEW_WEIGHT * (happy / len(moods))
 
         # Demo mode fallback
-        if self.demo_mode and not new_events and random.random() < 0.03:
+        if self.demo_mode and not new_events and random.random() < DEMO_TICK_CHANCE:
             self._demo_tick()
 
     def _demo_tick(self):
@@ -413,13 +498,13 @@ class Simulation:
             self.agents.append(agent)
             self.world.add_notification("Demo session started!", "🎮", "\033[92m")
 
-        if random.random() < 0.08 and len(self.agents) < 8:
+        if random.random() < DEMO_SPAWN_CHANCE and len(self.agents) < DEMO_MAX_AGENTS:
             role = random.choice(list(AgentRole))
             agent = spawn_agent(self._next_id(), role, parent_id=self.agents[0].id, is_subagent=True)
             self.agents.append(agent)
             self.world.add_notification(f"{agent.name} ({role.value}) spawned!", "👋", "\033[92m")
 
-        if random.random() < 0.05:
+        if random.random() < DEMO_DESPAWN_CHANCE:
             subs = [a for a in self.agents if a.is_subagent]
             if subs:
                 gone = random.choice(subs)
@@ -433,10 +518,10 @@ class Simulation:
             agent.thought_timer = 0
             zone = self.world.get_zone_for_activity(agent.activity)
             cx, cy = zone.center()
-            agent.target_x = cx + random.randint(-3, 3)
-            agent.target_y = cy + random.randint(-2, 2)
-            agent.target_x = max(2, min(self.world.width - 10, agent.target_x))
-            agent.target_y = max(2, min(self.world.height - 6, agent.target_y))
+            agent.target_x = cx + random.randint(-ZONE_OFFSET_X, ZONE_OFFSET_X)
+            agent.target_y = cy + random.randint(-ZONE_OFFSET_Y, ZONE_OFFSET_Y)
+            agent.target_x = max(2, min(self.world.width - ZONE_CLAMP_MARGIN_X, agent.target_x))
+            agent.target_y = max(2, min(self.world.height - ZONE_CLAMP_MARGIN_Y, agent.target_y))
 
     def get_selected_agent(self):
         if self.selected_agent_id is not None:

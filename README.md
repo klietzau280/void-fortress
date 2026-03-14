@@ -58,7 +58,9 @@ Claw wreckers with grabber arms and welding sparks. Session color-coded — you 
 | **Claw wrecker mechs** | Fly to build sites with thruster flames, weld with sparks — coding agents work the station, idle agents retreat to the corner |
 | **Space radio comms** | All voice lines through a bandpass radio filter with static crackle and hiss, like transmissions from a distant void ship |
 | **Necron incursions** | Errors awaken tomb world horrors: *"NECRON MONOLITH PHASING INTO THE REPO!"* ... *"The Deceiver's hand is in this logic"* |
-| **Pilot dossiers** | Click any mech to inspect its battle-brother with a Doom-style portrait |
+| **Pilot dossiers** | Click any mech to inspect its battle-brother with a Doom-style portrait, mood-glow frame, header bar |
+| **Void Shields** | Per-session context window bar graph — watch each session's fuel drain in real-time |
+| **HUD polish** | Tech corner brackets, scan lines, glow text, accent dividers — grimdark military holographic display |
 | **Session crews** | Multiple Claude Code sessions get different hull colors |
 | **Battle moods** | ZEALOUS when coding, WRATHFUL fixing bugs, GLORIOUS on completion, BESIEGED when the Necrons attack |
 | **War thoughts** | *"The Codex Astartes supports this refactor"* ... *"git blame reveals... HERESY"* |
@@ -67,14 +69,23 @@ Claw wreckers with grabber arms and welding sparks. Session color-coded — you 
 
 ## Quick Start
 
+**One-liner install:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/klietzau280/void-fortress/main/install-remote.sh | bash
+```
+
+**Or clone manually:**
+
 ```bash
 git clone https://github.com/klietzau280/void-fortress.git
 cd void-fortress
-
-# Install everything (pygame + Claude Code hooks)
 ./install.sh
+```
 
-# Launch the fortress
+Then launch:
+
+```bash
 python3 gui.py
 ```
 
