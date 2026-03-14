@@ -969,11 +969,12 @@ class GUI:
 
             # Check for context compaction — destroy structures built by compacted agents
             if self.sim.compacted_agents:
-                for agent_name in self.sim.compacted_agents:
+                to_compact = self.sim.compacted_agents[:]
+                self.sim.compacted_agents.clear()
+                for agent_name in to_compact:
                     points = self.station.destroy_by_agent(agent_name)
                     for px, py in points:
                         self.explosions.append(Explosion(px, py))
-                self.sim.compacted_agents.clear()
 
             # Update grid scaling for current window size before moving agents
             sw, sh = self.screen.get_size()

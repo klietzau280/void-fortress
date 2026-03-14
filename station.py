@@ -672,14 +672,15 @@ class Station:
             if not struct_def:
                 continue
             template = struct_def["template"]
+            if not template:
+                continue
             sx, sy = s["x"], s["y"]
             rows = len(template)
             cols = max(len(r) for r in template)
             if sx <= grid_x < sx + cols and sy <= grid_y < sy + rows:
-                # Check if this cell actually has content in the template
                 ry = grid_y - sy
                 rx = grid_x - sx
-                if rx < len(template[ry]) and CHAR_TO_CELL.get(template[ry][rx]) is not None:
+                if ry < rows and rx < len(template[ry]) and CHAR_TO_CELL.get(template[ry][rx]) is not None:
                     return s
         return None
 
