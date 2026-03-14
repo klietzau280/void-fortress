@@ -7,6 +7,37 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 
+# -- Mood rendering --
+ANSI_RESET = "\033[0m"
+
+# -- Agent defaults --
+DEFAULT_MOOD_STABILITY = 0.5
+DEFAULT_ENERGY = 1.0
+
+# -- Thought timing --
+THOUGHT_TIMER_MIN = 2.0
+THOUGHT_TIMER_MAX = 5.0
+
+# -- Energy rates --
+ENERGY_DRAIN_RATE = 0.02
+ENERGY_RECOVER_RATE = 0.05
+
+# -- Thought bubble (ASCII) --
+THOUGHT_BUBBLE_MAX_WIDTH = 30
+
+# -- Mood stability range --
+MOOD_STABILITY_MIN = 0.3
+MOOD_STABILITY_MAX = 0.9
+
+# -- Spawn position ranges --
+SPAWN_X_MIN = 5
+SPAWN_X_MAX = 60
+SPAWN_Y_MIN = 3
+SPAWN_Y_MAX = 20
+
+# -- Celebration --
+CELEBRATION_THOUGHT_TIMER = 3.0
+
 
 class Mood(Enum):
     ECSTATIC = ("GLORIOUS", "★", "\033[93m")       # victory
@@ -25,7 +56,7 @@ class Mood(Enum):
 
     @property
     def reset(self):
-        return "\033[0m"
+        return ANSI_RESET
 
     def render(self):
         return f"{self.color}{self.icon}{self.reset}"
@@ -52,6 +83,13 @@ THOUGHTS = {
         "By the Throne, where is that file",
         "The machine spirit resists my queries",
         "Sweeping for xenos artifacts...",
+        "Augur arrays at maximum sensitivity",
+        "The grep-servitors found something...",
+        "Sifting through the data-reliquary",
+        "Signal detected. Origin: unknown tomb world",
+        "Pattern-matching against known heresies",
+        "The search-spirit stirs in the cogitator",
+        "Cross-referencing the Forbidden Index",
     ],
     "reading": [
         "Studying the sacred texts of the codebase",
@@ -61,6 +99,13 @@ THOUGHTS = {
         "Cross-referencing with the holy changelog",
         "These scrolls are older than the Imperium",
         "Decoding the machine spirit's memory",
+        "The data-slate reveals troubling truths",
+        "This was last touched by a heretek...",
+        "Reading between the runes of the ancients",
+        "The log files whisper of past battles",
+        "Who wrote this?! Not a loyal servant.",
+        "Interfacing with the knowledge-core",
+        "The parchment is faded but the logic holds",
     ],
     "coding": [
         "Forging new bulkheads for the fortress",
@@ -71,6 +116,14 @@ THOUGHTS = {
         "My duty is my shield. My code is my sword.",
         "The Codex Astartes supports this refactor",
         "Purging weakness from the architecture",
+        "The weld holds. The Emperor protects.",
+        "Laying adamantium logic into the hull",
+        "Each line of code, a prayer to the Machine God",
+        "This function shall be my monument",
+        "Riveting new armor plating to the core",
+        "The forge burns bright. The code takes shape.",
+        "Tempering the logic in holy promethium",
+        "Building ramparts against the darkness",
     ],
     "testing": [
         "Stress-testing the void shields...",
@@ -80,6 +133,12 @@ THOUGHTS = {
         "Plasma containment nominal. For now.",
         "Running the Rites of Diagnostics",
         "If this fails, we all meet the Emperor",
+        "Applying the Seven Seals of Verification",
+        "The test-servitors report no anomalies",
+        "Structural integrity at 97%. Acceptable.",
+        "Simulation complete. Casualties: minimal.",
+        "The warp drives test clean. Suspicious.",
+        "All bulkheads sealed. Pressure holding.",
     ],
     "fixing": [
         "The corruption runs deeper than expected",
@@ -97,6 +156,11 @@ THOUGHTS = {
         "Living metal... the bug self-healed?!",
         "Cryptek sorcery in the stack trace",
         "The Nightbringer walks these pipelines",
+        "Patching hull with ferrocrete and faith",
+        "The wound festers. More sacred unguents.",
+        "Rerouting power through backup conduits",
+        "The taint must be excised. No mercy.",
+        "Scarab traces in the memory banks...",
     ],
     "thinking": [
         "Consulting the strategic cogitators",
@@ -106,6 +170,13 @@ THOUGHTS = {
         "The warp whispers solutions... I resist",
         "Planning the next crusade",
         "There must be a purer path forward",
+        "Running probability matrices...",
+        "The tactical display shows... options",
+        "Calibrating the strategic auguries",
+        "Communing with the machine spirit",
+        "The answer lies buried in the data-vaults",
+        "Weighing the cost in blood and logic",
+        "The cogitator banks hum with purpose",
     ],
     "waiting": [
         "Standing vigil at my post",
@@ -115,6 +186,12 @@ THOUGHTS = {
         "The silence between battles is the loudest",
         "Maintaining combat readiness",
         "Eternal vigilance is the price of purity",
+        "The void is cold. My duty keeps me warm.",
+        "Listening to the hum of the reactor",
+        "Counting rivets. Checking seals. Again.",
+        "The watch is long but the will endures",
+        "Reciting the Litany of Patience...",
+        "Nothing on the auspex. Good.",
     ],
     "celebrating": [
         "VICTORY FOR THE IMPERIUM!",
@@ -124,6 +201,11 @@ THOUGHTS = {
         "Glory to the chapter! Zero defects!",
         "The Emperor smiles upon this deploy",
         "We are steel. We are doom. We are DONE.",
+        "Sound the warhorn! The task is complete!",
+        "Mark this day in the Fortress Codex!",
+        "The servitors cheer. Wait, servitors can't cheer.",
+        "Deploy successful. The void trembles.",
+        "The Imperium endures. So does my code.",
     ],
     "panicking": [
         "THE VOID SHIELDS ARE FAILING!",
@@ -141,6 +223,12 @@ THOUGHTS = {
         "The C'tan shard hungers for our uptime",
         "Flayed Ones in the dependency tree!",
         "DESTROYER CULT IN THE CI PIPELINE!",
+        "MULTIPLE HULL BREACHES! DECKS 3 THROUGH 9!",
+        "The reactor is going critical! EVACUATE!",
+        "Necron phase-shift detected in the kernel!",
+        "THE TESSERACT VAULT IS OPEN!",
+        "Wraith constructs in the memory allocator!",
+        "The Void Dragon stirs beneath the code!",
     ],
     "idle": [
         "Standing watch over the void",
@@ -150,6 +238,12 @@ THOUGHTS = {
         "The fortress is quiet. Too quiet.",
         "Meditating on the Litany of Deployment",
         "In the grim darkness there is only code",
+        "Staring into the void. It stares back.",
+        "The servitor brought recaf. Lukewarm.",
+        "Polishing the hull. It calms the spirit.",
+        "Running maintenance on my welding arm",
+        "The void hums. Or is that the reactor?",
+        "Another shift. Another empty auspex.",
     ],
 }
 
@@ -161,6 +255,14 @@ AGENT_NAMES = [
     "Malakai", "Draven", "Kael", "Voss",
     "Praxis", "Thanatos", "Helion", "Corvin",
     "Vex", "Kragg", "Steele", "Arcturus",
+    "Rhadamant", "Thorne", "Calgar", "Orion",
+    "Solaria", "Myrmidon", "Zephon", "Baldur",
+    "Ursarax", "Tyber", "Valeria", "Khorven",
+    "Artemis", "Reclus", "Veridian", "Kasr",
+    "Mortarion", "Aethon", "Seraphina", "Volkov",
+    "Nemiel", "Targon", "Ixion", "Lyander",
+    "Drusus", "Fenix", "Rhovan", "Imperius",
+    "Sariel", "Haldor", "Nyx", "Cassius",
 ]
 
 # Personality traits - grimdark edition
@@ -184,8 +286,8 @@ class Agent:
     activity: str = "idle"
     thought: str = ""
     thought_timer: float = 0
-    mood_stability: float = 0.5  # 0 = volatile, 1 = stable
-    energy: float = 1.0  # 0 = exhausted, 1 = full
+    mood_stability: float = DEFAULT_MOOD_STABILITY  # 0 = volatile, 1 = stable
+    energy: float = DEFAULT_ENERGY  # 0 = exhausted, 1 = full
     tasks_completed: int = 0
     parent_id: int | None = None
     spawn_time: float = field(default_factory=time.time)
@@ -218,7 +320,7 @@ class Agent:
             frame = self.BODY_FRAMES[0]
         return frame
 
-    def get_thought_bubble(self, max_width=30):
+    def get_thought_bubble(self, max_width=THOUGHT_BUBBLE_MAX_WIDTH):
         """Render a thought bubble above the agent."""
         if not self.thought:
             return []
@@ -237,7 +339,7 @@ class Agent:
         self.thought_timer -= dt
         if self.thought_timer <= 0:
             self.thought = random.choice(THOUGHTS.get(self.activity, THOUGHTS["idle"]))
-            self.thought_timer = random.uniform(2.0, 5.0)
+            self.thought_timer = random.uniform(THOUGHT_TIMER_MIN, THOUGHT_TIMER_MAX)
 
     def update_mood(self, dt):
         """Update mood based on activity. Stable - no random flickering."""
@@ -260,9 +362,9 @@ class Agent:
 
         # Energy drain
         if self.activity not in ("idle", "waiting"):
-            self.energy = max(0.0, self.energy - dt * 0.02)
+            self.energy = max(0.0, self.energy - dt * ENERGY_DRAIN_RATE)
         else:
-            self.energy = min(1.0, self.energy + dt * 0.05)
+            self.energy = min(DEFAULT_ENERGY, self.energy + dt * ENERGY_RECOVER_RATE)
 
     def move_toward_target(self):
         """Move one step toward target position."""
@@ -287,7 +389,7 @@ class Agent:
         self.mood = Mood.ECSTATIC
         self.activity = "celebrating"
         self.thought = random.choice(THOUGHTS["celebrating"])
-        self.thought_timer = 3.0
+        self.thought_timer = CELEBRATION_THOUGHT_TIMER
 
 
 def spawn_agent(agent_id, role=None, parent_id=None, is_subagent=False):
@@ -295,7 +397,7 @@ def spawn_agent(agent_id, role=None, parent_id=None, is_subagent=False):
     name = random.choice(AGENT_NAMES)
     role = role or random.choice(list(AgentRole))
     personality = random.choice(PERSONALITY_TRAITS)
-    mood_stability = random.uniform(0.3, 0.9)
+    mood_stability = random.uniform(MOOD_STABILITY_MIN, MOOD_STABILITY_MAX)
 
     return Agent(
         id=agent_id,
@@ -305,8 +407,8 @@ def spawn_agent(agent_id, role=None, parent_id=None, is_subagent=False):
         mood_stability=mood_stability,
         parent_id=parent_id,
         is_subagent=is_subagent,
-        x=random.randint(5, 60),
-        y=random.randint(3, 20),
-        target_x=random.randint(5, 60),
-        target_y=random.randint(3, 20),
+        x=random.randint(SPAWN_X_MIN, SPAWN_X_MAX),
+        y=random.randint(SPAWN_Y_MIN, SPAWN_Y_MAX),
+        target_x=random.randint(SPAWN_X_MIN, SPAWN_X_MAX),
+        target_y=random.randint(SPAWN_Y_MIN, SPAWN_Y_MAX),
     )

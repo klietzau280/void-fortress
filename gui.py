@@ -1073,20 +1073,19 @@ class GUI:
         pygame.draw.line(self.screen, (40, 50, 70), (x, world_h + 6), (x, world_h + 28), 1)
         x += 10
 
-        # Void Shields — per-session bar graph when context data available
+        # Void Shields — per-session bar graph
         fuel_label = self.font_small.render("Void Shields", True, (120, 130, 160))
         self.screen.blit(fuel_label, (x, y + 2))
 
         bars = self.sim.get_session_context_bars()  # [(name, used_pct), ...]
-        if bars:
-            # Bar graph: one vertical bar per session
-            bar_area_x = x
-            bar_area_y = y + 14
-            bar_max_h = 14
-            bar_w = 10
-            bar_gap = 3
-            max_bars = min(len(bars), 6)  # cap at 6 sessions visible
+        bar_area_x = x
+        bar_area_y = y + 14
+        bar_max_h = 14
+        bar_w = 12
+        bar_gap = 2
 
+        if bars:
+            max_bars = min(len(bars), 6)
             for i in range(max_bars):
                 name, used_pct = bars[i]
                 fuel_pct = max(0.0, 1.0 - used_pct / 100.0)
@@ -1112,30 +1111,21 @@ class GUI:
                 pygame.draw.rect(self.screen, (50, 55, 75),
                                  (bx, bar_area_y, bar_w, bar_max_h), 1, border_radius=2)
 
-            # Percentage of worst session next to bars
-            worst_pct = bars[0][1]  # already sorted descending
+            # Worst session percentage + name
+            worst_name, worst_pct = bars[0]
             pct_color = PALETTE["energy_cyan"] if worst_pct < 50 else PALETTE["flame_yellow"] if worst_pct < 80 else PALETTE["mood_WRATHFUL"]
-            pct_surf = self.font_small.render(f"{int(worst_pct)}%", True, pct_color)
-            pct_x = bar_area_x + max_bars * (bar_w + bar_gap) + 2
-            self.screen.blit(pct_surf, (pct_x, bar_area_y + 2))
+            pct_x = bar_area_x + max_bars * (bar_w + bar_gap) + 3
+            pct_surf = self.font_small.render(f"{int(100 - worst_pct)}%", True, pct_color)
+            self.screen.blit(pct_surf, (pct_x, bar_area_y))
+            if max_bars > 1:
+                name_surf = self.font_small.render(worst_name[:8], True, (70, 75, 95))
+                self.screen.blit(name_surf, (pct_x, bar_area_y + 10))
         else:
-            # Fallback: single bar based on tool calls
-            fuel_pct = max(0.0, 1.0 - self.sim.total_tool_calls / FUEL_MAX_TOOL_CALLS)
-            bar_x = x
-            bar_y = y + 16
-            bar_w = FUEL_BAR_WIDTH
-            bar_h = FUEL_BAR_HEIGHT
-            pygame.draw.rect(self.screen, (30, 35, 50), (bar_x, bar_y, bar_w, bar_h), border_radius=3)
-            if fuel_pct > 0:
-                if fuel_pct > FUEL_WARN_THRESHOLD:
-                    bar_color = PALETTE["energy_cyan"]
-                elif fuel_pct > FUEL_CRITICAL_THRESHOLD:
-                    bar_color = PALETTE["flame_yellow"]
-                else:
-                    bar_color = PALETTE["mood_WRATHFUL"]
-                fill_w = int(fuel_pct * bar_w)
-                pygame.draw.rect(self.screen, bar_color, (bar_x, bar_y, fill_w, bar_h), border_radius=3)
-            pygame.draw.rect(self.screen, (50, 55, 75), (bar_x, bar_y, bar_w, bar_h), 1, border_radius=3)
+            # No sessions — show empty single bar
+            pygame.draw.rect(self.screen, (30, 35, 50),
+                             (bar_area_x, bar_area_y, FUEL_BAR_WIDTH, FUEL_BAR_HEIGHT), border_radius=3)
+            pygame.draw.rect(self.screen, (50, 55, 75),
+                             (bar_area_x, bar_area_y, FUEL_BAR_WIDTH, FUEL_BAR_HEIGHT), 1, border_radius=3)
 
         # Horizontal accent divider between row 1 and row 2
         div_y = world_h + 34

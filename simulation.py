@@ -100,6 +100,7 @@ class Simulation:
         self.active_sessions: dict[str, int] = {}  # session_id -> agent_id
         self.subagent_map: dict[str, int] = {}  # agent_id (hook) -> agent_id (sim)
         self.session_context_pct: dict[str, float] = {}  # session_id -> last known ctx %
+        self.session_tool_calls: dict[str, int] = {}  # session_id -> tool call count
         self.last_event_time: float = 0
         self.waiting_for_events = True
 
@@ -227,17 +228,25 @@ class Simulation:
         return max(active_pcts) if active_pcts else None
 
     def get_session_context_bars(self) -> list[tuple[str, float]]:
-        """Return list of (agent_name, used_pct) for active sessions with context data."""
+        """Return list of (agent_name, used_pct) for all active sessions.
+
+        Uses real context_window data when available, otherwise estimates
+        from tool call count (FUEL_MAX_TOOL_CALLS = 100% usage).
+        """
+        fuel_max = 200  # matches FUEL_MAX_TOOL_CALLS in gui.py
         bars = []
         for sid, agent_id in self.active_sessions.items():
-            if sid not in self.session_context_pct:
-                continue
-            pct = self.session_context_pct[sid]
             name = "???"
             for a in self.agents:
                 if a.id == agent_id:
                     name = a.name
                     break
+            # Prefer real context data, fall back to tool-call estimate
+            if sid in self.session_context_pct:
+                pct = self.session_context_pct[sid]
+            else:
+                calls = self.session_tool_calls.get(sid, 0)
+                pct = min(100.0, calls / fuel_max * 100.0)
             bars.append((name, pct))
         # Sort by usage descending so hottest session is first
         bars.sort(key=lambda b: b[1], reverse=True)
@@ -254,13 +263,26 @@ class Simulation:
         if event.event_name == "SessionStart":
             agent = self._ensure_session_agent(event.session_id)
             agent.activity = "idle"
-            agent.thought = "Session started!"
+            agent.thought = random.choice([
+                "Systems online. Awaiting orders.",
+                "Reactor ignition complete.",
+                "The machine spirit awakens!",
+                "All systems nominal. Ready for duty.",
+                "Void shields charging...",
+                "Neural link established.",
+            ])
             agent.mood = Mood.HAPPY
             if notify:
                 project = event.cwd or "unknown"
                 project = project.split("/")[-1] if "/" in project else project
                 self.world.add_notification(
-                    f"Claude session started in {project}",
+                    random.choice([
+                        f"{agent.name} deployed to {project}",
+                        f"New battle-brother arrives in {project}",
+                        f"{agent.name} reporting for duty in {project}",
+                        f"Drop pod landed in {project} sector",
+                        f"{agent.name}: void insertion into {project}",
+                    ]),
                     "🟢", "\033[92m",
                 )
 
@@ -269,19 +291,32 @@ class Simulation:
             if agent:
                 if notify:
                     self.world.add_notification(
-                        f"{agent.name} session ended",
+                        random.choice([
+                            f"{agent.name} has withdrawn from the field",
+                            f"{agent.name}: mission complete. Disengaging.",
+                            f"{agent.name} returns to the void",
+                            f"Signal lost: {agent.name}",
+                            f"{agent.name} entering cryo-stasis",
+                        ]),
                         "🔴", "\033[91m",
                     )
                 self.agents.remove(agent)
                 self.active_sessions.pop(event.session_id, None)
                 self.session_context_pct.pop(event.session_id, None)
+                self.session_tool_calls.pop(event.session_id, None)
 
         elif event.event_name == "SubagentStart":
             agent = self._spawn_subagent_for_event(event)
             if notify:
                 stype = event.subagent_type or "agent"
                 self.world.add_notification(
-                    f"{agent.name} spawned as {stype}!",
+                    random.choice([
+                        f"{agent.name} spawned as {stype}!",
+                        f"Reinforcements! {agent.name} ({stype}) deployed!",
+                        f"New {stype} unit: {agent.name} online",
+                        f"The forge births {agent.name} — a {stype}",
+                        f"{agent.name} emerges from the drop pod as {stype}",
+                    ]),
                     "👋", "\033[92m",
                 )
 
@@ -339,6 +374,7 @@ class Simulation:
 
             if event.event_name == "PostToolUse":
                 self.total_tool_calls += 1
+                self.session_tool_calls[event.session_id] = self.session_tool_calls.get(event.session_id, 0) + 1
                 if random.random() < TASK_COMPLETE_CHANCE:
                     agent.tasks_completed += 1
                     self.total_tasks_completed += 1
@@ -394,7 +430,14 @@ class Simulation:
             agent.thought_timer = PROMPT_THOUGHT_TIMER
             if notify:
                 self.world.add_notification(
-                    "New user prompt received",
+                    random.choice([
+                        "New orders from the command deck",
+                        "Transmission received from high command",
+                        "The Admiral speaks. We obey.",
+                        "Priority communique incoming",
+                        "New mission parameters uploaded",
+                        "Orders received. Adjusting heading.",
+                    ]),
                     "💬", "\033[97m",
                 )
 
@@ -402,33 +445,61 @@ class Simulation:
             agent = self._find_agent_for_event(event)
             if agent:
                 agent.activity = "waiting"
-                agent.thought = "Done! Waiting for feedback..."
+                agent.thought = random.choice([
+                    "Mission complete. Awaiting debrief.",
+                    "Task done. Standing by for orders.",
+                    "The work is finished. For now.",
+                    "Reporting mission success to command.",
+                    "Objective secured. What's next?",
+                ])
                 agent.mood = Mood.HAPPY
                 agent.thought_timer = 8.0
 
         elif event.event_name == "Notification":
             if notify:
                 self.world.add_notification(
-                    "Claude needs attention",
+                    random.choice([
+                        "The command deck requires your attention",
+                        "Alert: human oversight requested",
+                        "Bridge to captain: your input is needed",
+                        "Priority signal from the command throne",
+                    ]),
                     "🔔", "\033[93m",
                 )
 
         elif event.event_name == "PreCompact":
             agent = self._find_agent_for_event(event)
             if agent:
-                agent.thought = "Memory getting full... compacting!"
+                agent.thought = random.choice([
+                    "Memory banks overloading! Purging!",
+                    "The cogitator strains... compacting!",
+                    "Too many battle-logs. Archiving...",
+                    "Void shield memory at critical! Dumping excess!",
+                    "The machine spirit groans under the data weight",
+                ])
                 agent.mood = Mood.CONFUSED
                 agent.activity = "thinking"
                 if notify:
                     self.world.add_notification(
-                        "Context compaction in progress",
+                        random.choice([
+                            f"{agent.name}: void shield memory critical! Compacting!",
+                            f"WARNING: {agent.name}'s cogitator banks overloaded",
+                            f"{agent.name} purging non-essential memory engrams",
+                            f"Context overflow on {agent.name} — emergency compression",
+                        ]),
                         "🗜️", "\033[95m",
                     )
 
         elif event.event_name == "PermissionRequest":
             agent = self._find_agent_for_event(event)
             if agent:
-                agent.thought = "Asking for permission..."
+                agent.thought = random.choice([
+                    "Requesting authorization from command...",
+                    "Awaiting clearance from the Admiral...",
+                    "The Codex requires approval for this action",
+                    "Seeking the Captain's seal...",
+                    "Permission protocols engaged. Waiting.",
+                ])
                 agent.mood = Mood.THINKING
                 agent.activity = "waiting"
 
