@@ -35,14 +35,14 @@ PALETTE = {
     "outline": (20, 20, 35),
     "shadow": (0, 0, 0, 60),
     # Mood colors
-    "mood_happy": (100, 220, 80),
-    "mood_ecstatic": (255, 220, 50),
-    "mood_focused": (80, 180, 220),
-    "mood_thinking": (100, 120, 220),
-    "mood_confused": (200, 100, 220),
-    "mood_frustrated": (220, 70, 70),
-    "mood_bored": (150, 150, 150),
-    "mood_panicking": (255, 40, 40),
+    "mood_RIGHTEOUS": (100, 220, 80),
+    "mood_GLORIOUS": (255, 220, 50),
+    "mood_ZEALOUS": (80, 180, 220),
+    "mood_VIGILANT": (100, 120, 220),
+    "mood_SUSPICIOUS": (200, 100, 220),
+    "mood_WRATHFUL": (220, 70, 70),
+    "mood_STOIC": (150, 150, 150),
+    "mood_BESIEGED": (255, 40, 40),
     # Space
     "space_bg": (8, 8, 18),
     "space_bg2": (12, 10, 25),
@@ -240,31 +240,30 @@ def create_mood_icon(mood_name: str, size: int = 16):
     pygame.draw.circle(surf, PALETTE["outline"], (size // 2, size // 2), size // 2 - 1, 1)
 
     cx, cy = size // 2, size // 2
-    if mood_name == "happy":
+    if mood_name == "RIGHTEOUS":
         pygame.draw.circle(surf, PALETTE["black"], (cx - 2, cy - 2), 1)
         pygame.draw.circle(surf, PALETTE["black"], (cx + 2, cy - 2), 1)
         pygame.draw.arc(surf, PALETTE["black"], (cx - 3, cy - 1, 6, 5), 3.14, 6.28, 1)
-    elif mood_name == "ecstatic":
+    elif mood_name == "GLORIOUS":
         _draw_star(surf, cx, cy, 4, PALETTE["black"])
-    elif mood_name == "focused":
+    elif mood_name == "ZEALOUS":
         pygame.draw.circle(surf, PALETTE["black"], (cx, cy), 3, 1)
         pygame.draw.circle(surf, PALETTE["black"], (cx, cy), 1)
-    elif mood_name == "thinking":
+    elif mood_name == "VIGILANT":
         for i in range(3):
             pygame.draw.circle(surf, PALETTE["black"], (cx - 3 + i * 3, cy), 1)
-    elif mood_name == "confused":
+    elif mood_name == "SUSPICIOUS":
         font = pygame.font.SysFont(None, size - 2)
         txt = font.render("?", True, PALETTE["black"])
         surf.blit(txt, (cx - txt.get_width() // 2, cy - txt.get_height() // 2))
-    elif mood_name == "frustrated":
+    elif mood_name == "WRATHFUL":
         pygame.draw.line(surf, PALETTE["black"], (cx - 3, cy - 3), (cx - 1, cy - 1), 1)
         pygame.draw.line(surf, PALETTE["black"], (cx + 3, cy - 3), (cx + 1, cy - 1), 1)
         pygame.draw.line(surf, PALETTE["black"], (cx - 2, cy + 2), (cx + 2, cy + 2), 1)
-    elif mood_name == "bored":
-        font = pygame.font.SysFont(None, size - 4)
-        txt = font.render("z", True, PALETTE["black"])
-        surf.blit(txt, (cx - txt.get_width() // 2, cy - txt.get_height() // 2))
-    elif mood_name == "panicking":
+    elif mood_name == "STOIC":
+        # Stoic = horizontal line (unflinching)
+        pygame.draw.line(surf, PALETTE["black"], (cx - 3, cy), (cx + 3, cy), 2)
+    elif mood_name == "BESIEGED":
         font = pygame.font.SysFont(None, size - 2)
         txt = font.render("!", True, PALETTE["black"])
         surf.blit(txt, (cx - txt.get_width() // 2, cy - txt.get_height() // 2))
@@ -847,18 +846,18 @@ _VISOR_VARIANTS = [
 ]
 
 MOOD_TINTS = {
-    "happy": (20, 40, 10, 18),
-    "ecstatic": (40, 35, 0, 22),
-    "focused": (0, 20, 40, 12),
-    "thinking": (10, 10, 30, 12),
-    "confused": (30, 8, 35, 18),
-    "frustrated": (50, 5, 0, 28),
-    "bored": (0, 0, 0, 8),
-    "panicking": (70, 0, 0, 38),
+    "RIGHTEOUS": (20, 40, 10, 18),
+    "GLORIOUS": (40, 35, 0, 22),
+    "ZEALOUS": (0, 20, 40, 12),
+    "VIGILANT": (10, 10, 30, 12),
+    "SUSPICIOUS": (30, 8, 35, 18),
+    "WRATHFUL": (50, 5, 0, 28),
+    "STOIC": (0, 0, 0, 8),
+    "BESIEGED": (70, 0, 0, 38),
 }
 
 
-def create_pilot_portrait(seed: int, mood: str = "focused", size: int = 72):
+def create_pilot_portrait(seed: int, mood: str = "ZEALOUS", size: int = 72):
     """Create a Doom-style face portrait."""
     cache_key = (seed, mood, size)
     if cache_key in _portrait_cache:
@@ -871,14 +870,14 @@ def create_pilot_portrait(seed: int, mood: str = "focused", size: int = 72):
     # Override visor color with mood for helmeted variants
     if visor:
         mood_visors = {
-            "happy": (50, 220, 60),
-            "ecstatic": (255, 230, 40),
-            "focused": (50, 180, 255),
-            "thinking": (80, 100, 240),
-            "confused": (190, 80, 240),
-            "frustrated": (240, 45, 30),
-            "bored": (100, 100, 120),
-            "panicking": (255, 20, 20),
+            "RIGHTEOUS": (50, 220, 60),
+            "GLORIOUS": (255, 230, 40),
+            "ZEALOUS": (50, 180, 255),
+            "VIGILANT": (80, 100, 240),
+            "SUSPICIOUS": (190, 80, 240),
+            "WRATHFUL": (240, 45, 30),
+            "STOIC": (100, 100, 120),
+            "BESIEGED": (255, 20, 20),
         }
         visor = mood_visors.get(mood, visor)
 

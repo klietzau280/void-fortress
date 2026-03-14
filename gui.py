@@ -124,10 +124,10 @@ class InfoPopup:
 
         # Mood bar - colored strip
         mood_color = {
-            "happy": (60, 200, 60), "ecstatic": (255, 220, 40),
-            "focused": (60, 170, 255), "thinking": (90, 110, 230),
-            "confused": (190, 90, 230), "frustrated": (230, 50, 40),
-            "bored": (110, 110, 125), "panicking": (255, 30, 30),
+            "RIGHTEOUS": (60, 200, 60), "GLORIOUS": (255, 220, 40),
+            "ZEALOUS": (60, 170, 255), "VIGILANT": (90, 110, 230),
+            "SUSPICIOUS": (190, 90, 230), "WRATHFUL": (230, 50, 40),
+            "STOIC": (110, 110, 125), "BESIEGED": (255, 30, 30),
         }.get(agent.mood.label, (120, 120, 140))
         bar_rect = pygame.Rect(left, cy, self.WIDTH - 24, 20)
         pygame.draw.rect(screen, (25, 30, 48), bar_rect, border_radius=3)
@@ -366,8 +366,8 @@ class GUI:
         self._init_assets()
 
     def _init_assets(self):
-        for mood_name in ["happy", "ecstatic", "focused", "thinking",
-                          "confused", "frustrated", "bored", "panicking"]:
+        for mood_name in ["RIGHTEOUS", "GLORIOUS", "ZEALOUS", "VIGILANT",
+                          "SUSPICIOUS", "WRATHFUL", "STOIC", "BESIEGED"]:
             self.mood_icons[mood_name] = create_mood_icon(mood_name, 16)
 
     def _build_from_tool(self, tool_name: str, agent_name: str, agent_px: float, agent_py: float):
@@ -707,7 +707,7 @@ class GUI:
             x += demo.get_width() + 15
 
         # Crew count
-        crew_txt = self.font.render(f"Crew: {len(self.sim.agents)}", True, PALETTE["mood_focused"])
+        crew_txt = self.font.render(f"Crew: {len(self.sim.agents)}", True, PALETTE["mood_ZEALOUS"])
         self.screen.blit(crew_txt, (x, y + 4))
         x += crew_txt.get_width() + 20
 
@@ -733,7 +733,7 @@ class GUI:
             elif fuel_pct > 0.2:
                 bar_color = PALETTE["flame_yellow"]
             else:
-                bar_color = PALETTE["mood_frustrated"]
+                bar_color = PALETTE["mood_WRATHFUL"]
             fill_w = int(fuel_pct * bar_w)
             pygame.draw.rect(self.screen, bar_color, (bar_x, bar_y, fill_w, bar_h), border_radius=3)
         pygame.draw.rect(self.screen, (50, 55, 75), (bar_x, bar_y, bar_w, bar_h), 1, border_radius=3)
@@ -747,10 +747,10 @@ class GUI:
             self.screen.blit(name_txt, (10, y2))
 
             role_color = {
-                "main": PALETTE["mood_ecstatic"], "explorer": PALETTE["mood_focused"],
-                "coder": PALETTE["mood_happy"], "tester": PALETTE["mood_confused"],
-                "researcher": PALETTE["mood_thinking"], "reviewer": PALETTE["white"],
-                "fixer": PALETTE["mood_frustrated"], "planner": PALETTE["mood_focused"],
+                "main": PALETTE["mood_GLORIOUS"], "explorer": PALETTE["mood_ZEALOUS"],
+                "coder": PALETTE["mood_RIGHTEOUS"], "tester": PALETTE["mood_SUSPICIOUS"],
+                "researcher": PALETTE["mood_VIGILANT"], "reviewer": PALETTE["white"],
+                "fixer": PALETTE["mood_WRATHFUL"], "planner": PALETTE["mood_ZEALOUS"],
             }.get(selected.role.value, PALETTE["white"])
             role_txt = self.font.render(selected.role.value, True, role_color)
             self.screen.blit(role_txt, (10 + name_txt.get_width() + 8, y2 + 4))

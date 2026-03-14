@@ -9,14 +9,14 @@ from enum import Enum
 
 
 class Mood(Enum):
-    ECSTATIC = ("ecstatic", "★", "\033[93m")      # bright yellow
-    HAPPY = ("happy", "☺", "\033[92m")             # green
-    FOCUSED = ("focused", "◉", "\033[96m")         # cyan
-    THINKING = ("thinking", "◎", "\033[94m")       # blue
-    CONFUSED = ("confused", "?", "\033[95m")        # magenta
-    FRUSTRATED = ("frustrated", "!", "\033[91m")    # red
-    BORED = ("bored", "~", "\033[90m")             # gray
-    PANICKING = ("panicking", "‼", "\033[31m")     # dark red
+    ECSTATIC = ("GLORIOUS", "★", "\033[93m")       # victory
+    HAPPY = ("RIGHTEOUS", "☺", "\033[92m")         # duty fulfilled
+    FOCUSED = ("ZEALOUS", "◉", "\033[96m")         # combat focus
+    THINKING = ("VIGILANT", "◎", "\033[94m")       # scanning
+    CONFUSED = ("SUSPICIOUS", "?", "\033[95m")     # something's wrong
+    FRUSTRATED = ("WRATHFUL", "!", "\033[91m")     # anger
+    BORED = ("STOIC", "~", "\033[90m")             # standing watch
+    PANICKING = ("BESIEGED", "‼", "\033[31m")      # under fire
 
     def __init__(self, label, icon, color):
         self.label = label
