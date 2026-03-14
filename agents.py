@@ -224,82 +224,29 @@ class Agent:
             self.thought_timer = random.uniform(2.0, 5.0)
 
     def update_mood(self, dt):
-        """Update mood based on activity and personality."""
-        # Mood transitions based on personality
-        if random.random() > self.mood_stability:
-            mood_map = {
-                "optimistic": {
-                    "coding": Mood.HAPPY,
-                    "fixing": Mood.FOCUSED,
-                    "testing": Mood.ECSTATIC,
-                    "searching": Mood.THINKING,
-                    "waiting": Mood.HAPPY,
-                },
-                "pessimistic": {
-                    "coding": Mood.THINKING,
-                    "fixing": Mood.FRUSTRATED,
-                    "testing": Mood.CONFUSED,
-                    "searching": Mood.BORED,
-                    "waiting": Mood.FRUSTRATED,
-                },
-                "anxious": {
-                    "coding": Mood.FOCUSED,
-                    "fixing": Mood.PANICKING,
-                    "testing": Mood.PANICKING,
-                    "searching": Mood.CONFUSED,
-                    "waiting": Mood.FRUSTRATED,
-                },
-                "chill": {
-                    "coding": Mood.FOCUSED,
-                    "fixing": Mood.THINKING,
-                    "testing": Mood.HAPPY,
-                    "searching": Mood.HAPPY,
-                    "waiting": Mood.BORED,
-                },
-                "perfectionist": {
-                    "coding": Mood.FOCUSED,
-                    "fixing": Mood.FRUSTRATED,
-                    "testing": Mood.THINKING,
-                    "searching": Mood.FOCUSED,
-                    "waiting": Mood.FRUSTRATED,
-                },
-                "chaotic": {
-                    "coding": Mood.ECSTATIC,
-                    "fixing": Mood.CONFUSED,
-                    "testing": Mood.PANICKING,
-                    "searching": Mood.BORED,
-                    "waiting": Mood.ECSTATIC,
-                },
-                "methodical": {
-                    "coding": Mood.FOCUSED,
-                    "fixing": Mood.FOCUSED,
-                    "testing": Mood.THINKING,
-                    "searching": Mood.THINKING,
-                    "waiting": Mood.BORED,
-                },
-                "impatient": {
-                    "coding": Mood.HAPPY,
-                    "fixing": Mood.FRUSTRATED,
-                    "testing": Mood.FRUSTRATED,
-                    "searching": Mood.FRUSTRATED,
-                    "waiting": Mood.PANICKING,
-                },
-            }
-            traits = mood_map.get(self.personality, mood_map["chill"])
-            new_mood = traits.get(self.activity)
-            if new_mood:
-                self.mood = new_mood
+        """Update mood based on activity. Stable - no random flickering."""
+        # Activity directly determines mood
+        activity_mood = {
+            "coding": Mood.FOCUSED,
+            "reading": Mood.THINKING,
+            "searching": Mood.THINKING,
+            "testing": Mood.FOCUSED,
+            "fixing": Mood.FRUSTRATED,
+            "thinking": Mood.THINKING,
+            "waiting": Mood.BORED,
+            "celebrating": Mood.ECSTATIC,
+            "panicking": Mood.PANICKING,
+            "idle": Mood.BORED,
+        }
+        target_mood = activity_mood.get(self.activity)
+        if target_mood:
+            self.mood = target_mood
 
         # Energy drain
         if self.activity not in ("idle", "waiting"):
             self.energy = max(0.0, self.energy - dt * 0.02)
         else:
             self.energy = min(1.0, self.energy + dt * 0.05)
-
-        # Low energy affects mood
-        if self.energy < 0.2:
-            if random.random() > 0.7:
-                self.mood = Mood.FRUSTRATED
 
     def move_toward_target(self):
         """Move one step toward target position."""
