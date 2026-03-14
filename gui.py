@@ -1203,9 +1203,9 @@ class GUI:
             offline_surf = self.font_small.render("OFFLINE", True, SHIELD_OFFLINE_COLOR)
             self.screen.blit(offline_surf, (bar_x + bar_w // 2 - offline_surf.get_width() // 2, by))
 
-        # Horizontal accent divider between row 1 and row 2
+        # Horizontal accent divider between row 1 and row 2 (stop before shield panel)
         div_y = world_h + 34
-        draw_accent_divider(self.screen, 8, div_y, w - 8, div_y, cyan, glow=True)
+        draw_accent_divider(self.screen, 8, div_y, shield_x - 18, div_y, cyan, glow=True)
 
         # Row 2: Selected agent detail (or hint to click)
         selected = self.sim.get_selected_agent()
