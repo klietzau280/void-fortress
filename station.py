@@ -627,6 +627,62 @@ class Station:
         if os.path.exists(SAVE_FILE):
             os.remove(SAVE_FILE)
 
+    def destroy_by_agent(self, agent_name: str) -> list[tuple[float, float]]:
+        """Remove all structures built by agent_name. Returns list of (px, py) centers for explosions."""
+        to_remove = [s for s in self.placed_structures if s.get("placed_by") == agent_name]
+        if not to_remove:
+            return []
+
+        explosion_points = []
+        for s in to_remove:
+            struct_def = STRUCTURES.get(s["name"])
+            if not struct_def:
+                continue
+            template = struct_def["template"]
+            sx, sy = s["x"], s["y"]
+            # Clear grid cells that belong to this structure
+            for ry, row in enumerate(template):
+                for rx, ch in enumerate(row):
+                    cell = CHAR_TO_CELL.get(ch)
+                    if cell is None:
+                        continue
+                    gx, gy = sx + rx, sy + ry
+                    if 0 <= gx < self.GRID_W and 0 <= gy < self.GRID_H:
+                        self.grid[gy][gx] = Cell.EMPTY
+            # Center of the structure in pixel coords
+            rows = len(template)
+            cols = max(len(r) for r in template)
+            cpx = (sx + cols / 2) * self.CELL_PX
+            cpy = (sy + rows / 2) * self.CELL_PX
+            explosion_points.append((cpx, cpy))
+
+        self.placed_structures = [s for s in self.placed_structures if s not in to_remove]
+        self._dirty = True
+
+        # If we destroyed the core, mark it gone
+        if any(s["name"] == "command_bastion" for s in to_remove):
+            self.has_core = False
+
+        return explosion_points
+
+    def structure_at(self, grid_x: int, grid_y: int) -> dict | None:
+        """Find the placed structure that owns a given grid cell, or None."""
+        for s in reversed(self.placed_structures):
+            struct_def = STRUCTURES.get(s["name"])
+            if not struct_def:
+                continue
+            template = struct_def["template"]
+            sx, sy = s["x"], s["y"]
+            rows = len(template)
+            cols = max(len(r) for r in template)
+            if sx <= grid_x < sx + cols and sy <= grid_y < sy + rows:
+                # Check if this cell actually has content in the template
+                ry = grid_y - sy
+                rx = grid_x - sx
+                if rx < len(template[ry]) and CHAR_TO_CELL.get(template[ry][rx]) is not None:
+                    return s
+        return None
+
     def get_stats(self):
         counts = {}
         for s in self.placed_structures:

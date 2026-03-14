@@ -103,6 +103,7 @@ class Simulation:
         self.session_tool_calls: dict[str, int] = {}  # session_id -> tool call count
         self.last_event_time: float = 0
         self.waiting_for_events = True
+        self.compacted_agents: list[str] = []  # agent names that compacted (GUI drains this)
 
         # Bootstrap from recent events to show current state
         self._bootstrap_from_recent()
@@ -476,17 +477,18 @@ class Simulation:
                     "Void shield memory at critical! Dumping excess!",
                     "The machine spirit groans under the data weight",
                 ])
-                agent.mood = Mood.CONFUSED
-                agent.activity = "thinking"
+                agent.mood = Mood.PANICKING
+                agent.activity = "panicking"
+                self.compacted_agents.append(agent.name)
                 if notify:
                     self.world.add_notification(
                         random.choice([
-                            f"{agent.name}: void shield memory critical! Compacting!",
-                            f"WARNING: {agent.name}'s cogitator banks overloaded",
-                            f"{agent.name} purging non-essential memory engrams",
-                            f"Context overflow on {agent.name} — emergency compression",
+                            f"VOID SHIELD COLLAPSE! {agent.name}'s fortress crumbles!",
+                            f"CRITICAL: {agent.name}'s memory purged — structures lost!",
+                            f"{agent.name}: cogitator overload! Fortress sections destroyed!",
+                            f"CATASTROPHIC COMPACTION — {agent.name}'s work is undone!",
                         ]),
-                        "🗜️", "\033[95m",
+                        "💥", "\033[91m",
                     )
 
         elif event.event_name == "PermissionRequest":

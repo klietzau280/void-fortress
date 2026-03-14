@@ -20,7 +20,7 @@ from sprites import (
     create_agent_sprites, create_mood_icon,
     create_thought_bubble, create_pilot_portrait,
 )
-from station import Station
+from station import Station, Cell
 
 # Screen
 WINDOW_W = 960
@@ -720,6 +720,10 @@ class GUI:
         self.drag_start = (0, 0)
         self.cam_drag_start = (0.0, 0.0)
 
+        # Hover label for structures
+        self._mouse_x = 0
+        self._mouse_y = 0
+
         # Info popup
         self.info_popup = InfoPopup()
 
@@ -915,6 +919,7 @@ class GUI:
                 elif event.type == pygame.MOUSEBUTTONUP:
                     self.dragging = False
                 elif event.type == pygame.MOUSEMOTION:
+                    self._mouse_x, self._mouse_y = event.pos
                     if self.dragging and event.buttons[2]:
                         dx = event.pos[0] - self.drag_start[0]
                         dy = event.pos[1] - self.drag_start[1]
@@ -961,6 +966,14 @@ class GUI:
                     event_key = "SessionStart" if not agent.is_subagent else "SubagentStart"
                     self._build_from_event(event_key, agent.name, vis.px, vis.py)
             self._last_agent_count = len(self.sim.agents)
+
+            # Check for context compaction — destroy structures built by compacted agents
+            if self.sim.compacted_agents:
+                for agent_name in self.sim.compacted_agents:
+                    points = self.station.destroy_by_agent(agent_name)
+                    for px, py in points:
+                        self.explosions.append(Explosion(px, py))
+                self.sim.compacted_agents.clear()
 
             # Update grid scaling for current window size before moving agents
             sw, sh = self.screen.get_size()
@@ -1055,6 +1068,30 @@ class GUI:
         # Explosions (drawn on top of agents)
         for exp in self.explosions:
             exp.draw(self.screen, self.cam_x, self.cam_y)
+
+        # Hover label for structures
+        if self._mouse_y < world_h and not self.info_popup.visible:
+            world_mx = self._mouse_x + self.cam_x
+            world_my = self._mouse_y + self.cam_y
+            grid_x = int(world_mx / self.station.CELL_PX)
+            grid_y = int(world_my / self.station.CELL_PX)
+            if 0 <= grid_x < self.station.GRID_W and 0 <= grid_y < self.station.GRID_H:
+                if self.station.grid[grid_y][grid_x] != Cell.EMPTY:
+                    struct = self.station.structure_at(grid_x, grid_y)
+                    if struct:
+                        label = struct["name"].replace("_", " ").title()
+                        builder = struct.get("placed_by", "unknown")
+                        text = f"{label}  —  built by {builder}"
+                        label_surf = self.font.render(text, True, PALETTE["white"])
+                        lw = label_surf.get_width() + 10
+                        lh = label_surf.get_height() + 6
+                        lx = min(self._mouse_x + 14, w - lw - 4)
+                        ly = max(self._mouse_y - lh - 4, 4)
+                        label_bg = pygame.Surface((lw, lh), pygame.SRCALPHA)
+                        label_bg.fill((10, 12, 28, 210))
+                        pygame.draw.rect(label_bg, POPUP_BORDER_COLOR, label_bg.get_rect(), 1, border_radius=3)
+                        self.screen.blit(label_bg, (lx, ly))
+                        self.screen.blit(label_surf, (lx + 5, ly + 3))
 
         # Waiting overlay
         if not self.sim.agents and self.sim.waiting_for_events:
