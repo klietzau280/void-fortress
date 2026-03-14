@@ -49,12 +49,30 @@ POPUP_MARGIN = 12
 POPUP_TOP_PADDING = 10
 POPUP_CLOSE_SIZE = 14
 POPUP_CLOSE_COLOR = (140, 35, 35)
+POPUP_CLOSE_X_COLOR = (200, 200, 200)
 POPUP_BG_COLOR = (14, 18, 32)
 POPUP_BORDER_COLOR = (45, 55, 85)
 POPUP_ACCENT_COLOR = (80, 200, 255)
 POPUP_THOUGHT_MAX_LEN = 45
 POPUP_BADGE_HEIGHT = 16
 POPUP_BADGE_PADDING = 8
+POPUP_HEADER_HEIGHT = 28
+POPUP_HEADER_BG = (8, 10, 22)
+POPUP_NAME_COLOR = (230, 235, 245)
+POPUP_RANK_TEXT_COLOR = (15, 18, 30)
+POPUP_MOOD_BAR_BG = (25, 30, 48)
+POPUP_MOOD_BAR_HEIGHT = 20
+POPUP_MOOD_GLOW_ALPHA = 30
+POPUP_MOOD_BORDER_WIDTH = 3
+POPUP_MOOD_GLOW_MARGIN = 4
+POPUP_STAT_LABEL_COLOR = (70, 78, 105)
+POPUP_STAT_VALUE_COLOR = (190, 195, 215)
+POPUP_STAT_LABEL_OFFSET_X = 10
+POPUP_STAT_VALUE_OFFSET_X = 100
+POPUP_STAT_ROW_HEIGHT = 20
+POPUP_STAT_BULLET_RADIUS = 2
+POPUP_THOUGHT_QUOTE_COLOR = (100, 150, 130)
+POPUP_CORNER_LENGTH = 10
 
 # -- Agent visual --
 MECH_MOVE_SPEED = 150.0
@@ -102,28 +120,94 @@ AUTO_SAVE_INTERVAL_SEC = 30
 # -- Demo --
 DEMO_BUILD_CHANCE = 0.012
 
-# -- Fuel gauge --
+# -- Fuel / Void Shields --
 FUEL_MAX_TOOL_CALLS = 200
 FUEL_WARN_THRESHOLD = 0.5
 FUEL_CRITICAL_THRESHOLD = 0.2
-FUEL_BAR_WIDTH = 80
-FUEL_BAR_HEIGHT = 10
+SHIELD_PANEL_WIDTH = 220
+SHIELD_BAR_HEIGHT = 14
+SHIELD_BAR_GAP = 4
+SHIELD_BAR_BORDER_RADIUS = 3
+SHIELD_MAX_BARS = 4
+SHIELD_BAR_BG = (25, 28, 42)
+SHIELD_BAR_BORDER = (50, 55, 75)
+SHIELD_BAR_NAME_COLOR = (180, 185, 200)
+SHIELD_BAR_PCT_COLOR = (220, 225, 240)
+SHIELD_BAR_NAME_MAX_LEN = 10
+SHIELD_EDGE_GLOW_WIDTH = 4
+SHIELD_EDGE_GLOW_ALPHA = 60
+SHIELD_OFFLINE_COLOR = (60, 65, 80)
 
 # -- UI panel --
 UI_PANEL_BG = (12, 14, 28)
+UI_PANEL_BG_DARK = (8, 10, 22)
 UI_PANEL_BORDER = (40, 50, 80)
+UI_PANEL_DIVIDER = (40, 50, 70)
+UI_PANEL_GLOW_ALPHA = 25
+UI_PANEL_CORNER_LENGTH = 14
 UI_HINT_COLOR = (55, 60, 80)
 UI_MOOD_TEXT_COLOR = (160, 165, 185)
 UI_CONTROLS_COLOR = (55, 60, 80)
+UI_DEMO_COLOR = (80, 80, 100)
+UI_SALVAGE_COLOR = (180, 200, 140)
+UI_SUBAGENT_TAG_COLOR = (100, 100, 140)
 
 # -- Waiting overlay --
 WAITING_OVERLAY_ALPHA = 100
 WAITING_DOTS_SPEED = 2
 WAITING_DOTS_MAX = 4
+WAITING_SUBTITLE_COLOR = (180, 190, 210)
+WAITING_HINT_COLOR = (100, 100, 130)
+WAITING_PULSE_BASE_ALPHA = 100
+WAITING_PULSE_AMPLITUDE = 50
+WAITING_PULSE_SPEED = 3
+WAITING_FRAME_WIDTH = 360
+WAITING_FRAME_HEIGHT = 100
 
 # -- Paused overlay --
 PAUSED_TEXT_COLOR = (255, 255, 100)
-PAUSED_BG_ALPHA = 180
+PAUSED_BANNER_HEIGHT = 50
+PAUSED_BG_ALPHA = 220
+PAUSED_GLOW_ALPHA = 50
+PAUSED_CORNER_LENGTH = 16
+PAUSED_SCAN_ALPHA = 20
+
+# -- Notification polish --
+NOTIFICATION_SLIDE_DURATION = 0.3
+NOTIFICATION_SLIDE_DISTANCE = 20
+NOTIFICATION_BORDER_ALPHA = 60
+NOTIFICATION_ACCENT_ALPHA = 180
+NOTIFICATION_ACCENT_WIDTH = 3
+NOTIFICATION_CORNER_LENGTH = 6
+
+# -- Shared inline colors --
+ENGINE_GLOW_COLOR = (255, 140, 30)
+SUBAGENT_ROLE_TAG_COLOR = (180, 180, 255)
+
+# -- Role colors (popup + UI) --
+ROLE_COLORS = {
+    "main": POPUP_ACCENT_COLOR,
+    "explorer": POPUP_ACCENT_COLOR,
+    "coder": (80, 220, 100),
+    "tester": (200, 120, 255),
+    "researcher": (120, 140, 255),
+    "reviewer": (200, 200, 220),
+    "fixer": (255, 100, 80),
+    "planner": POPUP_ACCENT_COLOR,
+}
+
+# -- Mood colors --
+MOOD_COLORS = {
+    "RIGHTEOUS": (60, 200, 60),
+    "GLORIOUS": (255, 220, 40),
+    "ZEALOUS": (60, 170, 255),
+    "VIGILANT": (90, 110, 230),
+    "SUSPICIOUS": (190, 90, 230),
+    "WRATHFUL": (230, 50, 40),
+    "STOIC": (110, 110, 125),
+    "BESIEGED": (255, 30, 30),
+}
+MOOD_COLOR_DEFAULT = (120, 120, 140)
 
 # Explosion colors — Necron gauss green + fire
 EXPLOSION_COLORS = [
@@ -322,24 +406,18 @@ class InfoPopup:
         pygame.draw.rect(screen, border, popup_rect, 2)
 
         # Tech corner brackets
-        draw_tech_corners(screen, popup_rect, accent, length=10, thickness=2)
+        draw_tech_corners(screen, popup_rect, accent, length=POPUP_CORNER_LENGTH, thickness=2)
 
         # Header bar — dark band at top with name + rank
-        header_h = 28
-        header_rect = pygame.Rect(self.x + 2, self.y + 2, self.WIDTH - 4, header_h)
-        pygame.draw.rect(screen, (8, 10, 22), header_rect)
+        header_rect = pygame.Rect(self.x + 2, self.y + 2, self.WIDTH - 4, POPUP_HEADER_HEIGHT)
+        pygame.draw.rect(screen, POPUP_HEADER_BG, header_rect)
 
-        role_color = {
-            "main": accent, "explorer": POPUP_ACCENT_COLOR,
-            "coder": (80, 220, 100), "tester": (200, 120, 255),
-            "researcher": (120, 140, 255), "reviewer": (200, 200, 220),
-            "fixer": (255, 100, 80), "planner": POPUP_ACCENT_COLOR,
-        }.get(agent.role.value, accent)
+        role_color = ROLE_COLORS.get(agent.role.value, accent)
         rank = "CAPTAIN" if not agent.is_subagent else agent.role.value[:3].upper()
 
-        name_surf = font_large.render(agent.name, True, (230, 235, 245))
+        name_surf = font_large.render(agent.name, True, POPUP_NAME_COLOR)
         screen.blit(name_surf, (self.x + POPUP_MARGIN, self.y + 5))
-        rank_surf = font_small.render(rank, True, (15, 18, 30))
+        rank_surf = font_small.render(rank, True, POPUP_RANK_TEXT_COLOR)
         badge_w = rank_surf.get_width() + POPUP_BADGE_PADDING
         badge_x = self.x + POPUP_MARGIN + name_surf.get_width() + 8
         badge_rect = pygame.Rect(badge_x, self.y + 8, badge_w, POPUP_BADGE_HEIGHT)
@@ -349,11 +427,11 @@ class InfoPopup:
         # Close button
         self.close_rect = pygame.Rect(self.x + self.WIDTH - 20, self.y + 7, POPUP_CLOSE_SIZE, POPUP_CLOSE_SIZE)
         pygame.draw.rect(screen, POPUP_CLOSE_COLOR, self.close_rect, border_radius=2)
-        x_surf = font_small.render("x", True, (200, 200, 200))
+        x_surf = font_small.render("x", True, POPUP_CLOSE_X_COLOR)
         screen.blit(x_surf, (self.close_rect.x + 3, self.close_rect.y + 1))
 
         left = self.x + POPUP_MARGIN
-        cy = self.y + header_h + 6
+        cy = self.y + POPUP_HEADER_HEIGHT + 6
 
         # Portrait (left side) with mood-glow frame
         portrait_size = POPUP_PORTRAIT_SIZE
@@ -362,37 +440,29 @@ class InfoPopup:
             portrait_seed = agent_visuals[agent.id].portrait_seed
         portrait = create_pilot_portrait(portrait_seed, agent.mood.label, portrait_size)
 
-        mood_color = {
-            "RIGHTEOUS": (60, 200, 60), "GLORIOUS": (255, 220, 40),
-            "ZEALOUS": (60, 170, 255), "VIGILANT": (90, 110, 230),
-            "SUSPICIOUS": (190, 90, 230), "WRATHFUL": (230, 50, 40),
-            "STOIC": (110, 110, 125), "BESIEGED": (255, 30, 30),
-        }.get(agent.mood.label, (120, 120, 140))
+        mood_color = MOOD_COLORS.get(agent.mood.label, MOOD_COLOR_DEFAULT)
 
         px = left
         py = cy
         # Mood glow behind portrait
-        glow_rect = pygame.Rect(px - 4, py - 4, portrait_size + 8, portrait_size + 8)
+        gm = POPUP_MOOD_GLOW_MARGIN
+        glow_rect = pygame.Rect(px - gm, py - gm, portrait_size + gm * 2, portrait_size + gm * 2)
         glow_surf = pygame.Surface((glow_rect.width, glow_rect.height), pygame.SRCALPHA)
         mr, mg, mb = mood_color
-        glow_surf.fill((mr, mg, mb, 30))
+        glow_surf.fill((mr, mg, mb, POPUP_MOOD_GLOW_ALPHA))
         screen.blit(glow_surf, (glow_rect.x, glow_rect.y))
         # Mood-colored border
         border_rect = pygame.Rect(px - 2, py - 2, portrait_size + 4, portrait_size + 4)
-        pygame.draw.rect(screen, mood_color, border_rect, 3)
+        pygame.draw.rect(screen, mood_color, border_rect, POPUP_MOOD_BORDER_WIDTH)
         screen.blit(portrait, (px, py))
-
-        # Name + rank already drawn in header
-
-        info_x = left + portrait_size + 10
 
         cy = py + portrait_size + 8
 
         # Mood bar - colored strip
-        bar_rect = pygame.Rect(left, cy, self.WIDTH - 24, 20)
-        pygame.draw.rect(screen, (25, 30, 48), bar_rect, border_radius=3)
+        bar_rect = pygame.Rect(left, cy, self.WIDTH - 24, POPUP_MOOD_BAR_HEIGHT)
+        pygame.draw.rect(screen, POPUP_MOOD_BAR_BG, bar_rect, border_radius=3)
         pygame.draw.rect(screen, mood_color, bar_rect, border_radius=3)
-        mood_txt = font.render(f"  {agent.mood.label.upper()}  ·  {agent.activity}", True, (15, 18, 30))
+        mood_txt = font.render(f"  {agent.mood.label.upper()}  ·  {agent.activity}", True, POPUP_RANK_TEXT_COLOR)
         screen.blit(mood_txt, (left + 6, cy + 2))
         cy += 28
 
@@ -410,13 +480,12 @@ class InfoPopup:
             stats.insert(0, ("Type", "Subagent"))
 
         for label, value in stats:
-            # Small dot bullet
-            pygame.draw.circle(screen, accent, (left + 3, cy + 6), 2)
-            label_surf = font_small.render(label, True, (70, 78, 105))
-            value_surf = font.render(value, True, (190, 195, 215))
-            screen.blit(label_surf, (left + 10, cy))
-            screen.blit(value_surf, (left + 100, cy - 1))
-            cy += 20
+            pygame.draw.circle(screen, accent, (left + 3, cy + 6), POPUP_STAT_BULLET_RADIUS)
+            label_surf = font_small.render(label, True, POPUP_STAT_LABEL_COLOR)
+            value_surf = font.render(value, True, POPUP_STAT_VALUE_COLOR)
+            screen.blit(label_surf, (left + POPUP_STAT_LABEL_OFFSET_X, cy))
+            screen.blit(value_surf, (left + POPUP_STAT_VALUE_OFFSET_X, cy - 1))
+            cy += POPUP_STAT_ROW_HEIGHT
 
         # Thought at bottom
         cy += 2
@@ -424,10 +493,9 @@ class InfoPopup:
         cy += 6
         if agent.thought:
             thought = agent.thought[:POPUP_THOUGHT_MAX_LEN] + "..." if len(agent.thought) > POPUP_THOUGHT_MAX_LEN else agent.thought
-            # Chevron prefix in cyan
             chevron_surf = font_small.render(">", True, accent)
             screen.blit(chevron_surf, (left, cy))
-            thought_surf = font_small.render(f'"{thought}"', True, (100, 150, 130))
+            thought_surf = font_small.render(f'"{thought}"', True, POPUP_THOUGHT_QUOTE_COLOR)
             screen.blit(thought_surf, (left + 12, cy))
 
 
@@ -529,7 +597,7 @@ class AgentVisual:
             glow_h = ENGINE_GLOW_HEIGHT
             glow = pygame.Surface((glow_w, glow_h), pygame.SRCALPHA)
             glow_alpha = int(ENGINE_GLOW_BASE_ALPHA + ENGINE_GLOW_FLICKER_AMPLITUDE * math.sin(time.time() * ENGINE_GLOW_FLICKER_SPEED))
-            glow.fill((255, 140, 30, glow_alpha))
+            glow.fill((*ENGINE_GLOW_COLOR, glow_alpha))
             screen.blit(glow, (sx + mech_w // 2 - glow_w // 2,
                                sy + idle_h))
 
@@ -549,7 +617,7 @@ class AgentVisual:
         screen.blit(name_surf, (nx + 3, ny + 1))
 
         if agent.is_subagent:
-            tag = tag_font.render(agent.role.value, True, (180, 180, 255))
+            tag = tag_font.render(agent.role.value, True, SUBAGENT_ROLE_TAG_COLOR)
             screen.blit(tag, (nx, ny + name_bg.get_height() + 1))
 
         # Mood icon to the right of the name
@@ -961,8 +1029,8 @@ class GUI:
 
             # Pulsing border frame
             t = time.time()
-            pulse_alpha = int(100 + 50 * math.sin(t * 3))
-            frame_rect = pygame.Rect(w // 2 - 180, ly - 10, 360, 100)
+            pulse_alpha = int(WAITING_PULSE_BASE_ALPHA + WAITING_PULSE_AMPLITUDE * math.sin(t * WAITING_PULSE_SPEED))
+            frame_rect = pygame.Rect(w // 2 - WAITING_FRAME_WIDTH // 2, ly - 10, WAITING_FRAME_WIDTH, WAITING_FRAME_HEIGHT)
             frame_surf = pygame.Surface((frame_rect.width, frame_rect.height), pygame.SRCALPHA)
             pygame.draw.rect(frame_surf, (*cyan, pulse_alpha), frame_surf.get_rect(), 2, border_radius=4)
             self.screen.blit(frame_surf, (frame_rect.x, frame_rect.y))
@@ -970,8 +1038,8 @@ class GUI:
             # Subtitle
             dots = "." * (int(t * WAITING_DOTS_SPEED) % WAITING_DOTS_MAX)
             msg1 = self.font_large.render(f"Awaiting deployment orders{dots}", True, cyan)
-            msg2 = self.font.render("Start a Claude Code session to begin the crusade!", True, (180, 190, 210))
-            msg3 = self.font_small.render("--demo for demo mode  |  R to purge and rebuild", True, (100, 100, 130))
+            msg2 = self.font.render("Start a Claude Code session to begin the crusade!", True, WAITING_SUBTITLE_COLOR)
+            msg3 = self.font_small.render("--demo for demo mode  |  R to purge and rebuild", True, WAITING_HINT_COLOR)
             self.screen.blit(msg1, (w // 2 - msg1.get_width() // 2, world_h // 2 + 10))
             self.screen.blit(msg2, (w // 2 - msg2.get_width() // 2, world_h // 2 + 40))
             self.screen.blit(msg3, (w // 2 - msg3.get_width() // 2, world_h // 2 + 60))
@@ -997,29 +1065,23 @@ class GUI:
 
         # Paused overlay — full-width banner
         if self.sim.paused:
-            banner_h = 50
-            banner_y = (world_h - banner_h) // 2
-            banner_bg = pygame.Surface((w, banner_h), pygame.SRCALPHA)
-            banner_bg.fill((0, 0, 0, 220))
+            banner_y = (world_h - PAUSED_BANNER_HEIGHT) // 2
+            banner_bg = pygame.Surface((w, PAUSED_BANNER_HEIGHT), pygame.SRCALPHA)
+            banner_bg.fill((0, 0, 0, PAUSED_BG_ALPHA))
             self.screen.blit(banner_bg, (0, banner_y))
 
             cyan = PALETTE["energy_cyan"]
-            # Horizontal border lines top/bottom
             pygame.draw.line(self.screen, cyan, (0, banner_y), (w, banner_y), 1)
-            pygame.draw.line(self.screen, cyan, (0, banner_y + banner_h), (w, banner_y + banner_h), 1)
+            pygame.draw.line(self.screen, cyan, (0, banner_y + PAUSED_BANNER_HEIGHT), (w, banner_y + PAUSED_BANNER_HEIGHT), 1)
 
-            # Glow text centered
             draw_glow_text(self.screen, self.font_title, "PAUSED", PAUSED_TEXT_COLOR,
                            w // 2 - self.font_title.size("PAUSED")[0] // 2,
-                           banner_y + (banner_h - self.font_title.get_height()) // 2,
-                           glow_color=cyan, glow_alpha=50)
+                           banner_y + (PAUSED_BANNER_HEIGHT - self.font_title.get_height()) // 2,
+                           glow_color=cyan, glow_alpha=PAUSED_GLOW_ALPHA)
 
-            # Tech corner brackets
-            banner_rect = pygame.Rect(0, banner_y, w, banner_h)
-            draw_tech_corners(self.screen, banner_rect, cyan, length=16, thickness=2)
-
-            # Scan lines on banner
-            draw_scan_lines(self.screen, banner_rect, alpha=20, spacing=3)
+            banner_rect = pygame.Rect(0, banner_y, w, PAUSED_BANNER_HEIGHT)
+            draw_tech_corners(self.screen, banner_rect, cyan, length=PAUSED_CORNER_LENGTH, thickness=2)
+            draw_scan_lines(self.screen, banner_rect, alpha=PAUSED_SCAN_ALPHA, spacing=3)
 
         pygame.display.flip()
 
@@ -1030,17 +1092,17 @@ class GUI:
         top_half = pygame.Rect(0, world_h, w, UI_H // 2)
         bot_half = pygame.Rect(0, world_h + UI_H // 2, w, UI_H - UI_H // 2)
         pygame.draw.rect(self.screen, UI_PANEL_BG, top_half)
-        pygame.draw.rect(self.screen, (8, 10, 22), bot_half)
+        pygame.draw.rect(self.screen, UI_PANEL_BG_DARK, bot_half)
 
         # Glow border — faint cyan line above solid border
         cyan = PALETTE["energy_cyan"]
         glow_line = pygame.Surface((w, 3), pygame.SRCALPHA)
-        glow_line.fill((*cyan, 25))
+        glow_line.fill((*cyan, UI_PANEL_GLOW_ALPHA))
         self.screen.blit(glow_line, (0, world_h - 2))
         pygame.draw.line(self.screen, UI_PANEL_BORDER, (0, world_h), (w, world_h), 2)
 
         # Tech corner brackets on panel
-        draw_tech_corners(self.screen, panel, cyan, length=14, thickness=2)
+        draw_tech_corners(self.screen, panel, cyan, length=UI_PANEL_CORNER_LENGTH, thickness=2)
 
         # Row 1: Pre-rendered title logo + stats
         x = 10
@@ -1051,12 +1113,12 @@ class GUI:
         x += self._title_logo.get_width() - 6
 
         if self.sim.demo_mode:
-            demo = self.font_small.render("[DEMO]", True, (80, 80, 100))
+            demo = self.font_small.render("[DEMO]", True, UI_DEMO_COLOR)
             self.screen.blit(demo, (x, y + 12))
             x += demo.get_width() + 10
 
         # Vertical divider between title and stats
-        pygame.draw.line(self.screen, (40, 50, 70), (x, world_h + 6), (x, world_h + 28), 1)
+        pygame.draw.line(self.screen, UI_PANEL_DIVIDER, (x, world_h + 6), (x, world_h + 28), 1)
         x += 10
 
         # Crew count
@@ -1065,37 +1127,32 @@ class GUI:
         x += crew_txt.get_width() + 20
 
         # Salvage count (total built)
-        salvage_txt = self.font.render(f"Fortified: {self.station.total_placed}", True, (180, 200, 140))
+        salvage_txt = self.font.render(f"Fortified: {self.station.total_placed}", True, UI_SALVAGE_COLOR)
         self.screen.blit(salvage_txt, (x, y + 8))
         x += salvage_txt.get_width() + 20
 
         # ── Void Shields: right-anchored panel ──
-        shield_panel_w = 220
-        shield_x = w - shield_panel_w - 8
+        shield_x = w - SHIELD_PANEL_WIDTH - 8
         shield_y = world_h + 4
 
         # Vertical divider separating shields from stats
-        pygame.draw.line(self.screen, (40, 50, 70),
+        pygame.draw.line(self.screen, UI_PANEL_DIVIDER,
                          (shield_x - 8, world_h + 4), (shield_x - 8, world_h + UI_H - 20), 1)
 
         # Header
         shield_label = self.font.render("VOID SHIELDS", True, cyan)
         self.screen.blit(shield_label, (shield_x, shield_y))
 
-        bars = self.sim.get_session_context_bars()  # [(name, used_pct), ...]
+        bars = self.sim.get_session_context_bars()
         bar_x = shield_x
-        bar_w = shield_panel_w
-        bar_h = 12
-        bar_gap = 4
+        bar_w = SHIELD_PANEL_WIDTH
         by = shield_y + 18
-        max_bars = 4  # max sessions shown
 
         if bars:
-            for i in range(min(len(bars), max_bars)):
+            for i in range(min(len(bars), SHIELD_MAX_BARS)):
                 name, used_pct = bars[i]
                 fuel_pct = max(0.0, min(1.0, 1.0 - used_pct / 100.0))
 
-                # Color based on remaining fuel
                 if fuel_pct > FUEL_WARN_THRESHOLD:
                     bar_color = PALETTE["energy_cyan"]
                 elif fuel_pct > FUEL_CRITICAL_THRESHOLD:
@@ -1104,43 +1161,43 @@ class GUI:
                     bar_color = PALETTE["mood_WRATHFUL"]
 
                 # Background track
-                pygame.draw.rect(self.screen, (25, 28, 42),
-                                 (bar_x, by, bar_w, bar_h), border_radius=3)
+                pygame.draw.rect(self.screen, SHIELD_BAR_BG,
+                                 (bar_x, by, bar_w, SHIELD_BAR_HEIGHT), border_radius=SHIELD_BAR_BORDER_RADIUS)
 
-                # Filled portion (left to right = fuel remaining)
+                # Filled portion
                 fill_w = max(1, int(fuel_pct * bar_w))
                 pygame.draw.rect(self.screen, bar_color,
-                                 (bar_x, by, fill_w, bar_h), border_radius=3)
+                                 (bar_x, by, fill_w, SHIELD_BAR_HEIGHT), border_radius=SHIELD_BAR_BORDER_RADIUS)
 
                 # Glow on the fill edge
-                if fill_w > 4:
+                if fill_w > SHIELD_EDGE_GLOW_WIDTH:
                     r, g, b = bar_color
-                    edge_glow = pygame.Surface((4, bar_h), pygame.SRCALPHA)
-                    edge_glow.fill((r, g, b, 60))
-                    self.screen.blit(edge_glow, (bar_x + fill_w - 4, by))
+                    edge_glow = pygame.Surface((SHIELD_EDGE_GLOW_WIDTH, SHIELD_BAR_HEIGHT), pygame.SRCALPHA)
+                    edge_glow.fill((r, g, b, SHIELD_EDGE_GLOW_ALPHA))
+                    self.screen.blit(edge_glow, (bar_x + fill_w - SHIELD_EDGE_GLOW_WIDTH, by))
 
                 # Border
-                pygame.draw.rect(self.screen, (50, 55, 75),
-                                 (bar_x, by, bar_w, bar_h), 1, border_radius=3)
+                pygame.draw.rect(self.screen, SHIELD_BAR_BORDER,
+                                 (bar_x, by, bar_w, SHIELD_BAR_HEIGHT), 1, border_radius=SHIELD_BAR_BORDER_RADIUS)
 
                 # Name on the left inside the bar
-                name_surf = self.font_small.render(name[:10], True, (180, 185, 200))
-                self.screen.blit(name_surf, (bar_x + 4, by + 1))
+                name_surf = self.font_small.render(name[:SHIELD_BAR_NAME_MAX_LEN], True, SHIELD_BAR_NAME_COLOR)
+                self.screen.blit(name_surf, (bar_x + 4, by + 2))
 
                 # Percentage on the right inside the bar
                 pct_str = f"{int(100 - used_pct)}%"
-                pct_surf = self.font_small.render(pct_str, True, (220, 225, 240))
-                self.screen.blit(pct_surf, (bar_x + bar_w - pct_surf.get_width() - 4, by + 1))
+                pct_surf = self.font_small.render(pct_str, True, SHIELD_BAR_PCT_COLOR)
+                self.screen.blit(pct_surf, (bar_x + bar_w - pct_surf.get_width() - 4, by + 2))
 
-                by += bar_h + bar_gap
+                by += SHIELD_BAR_HEIGHT + SHIELD_BAR_GAP
         else:
             # No sessions — empty bar with "OFFLINE" label
-            pygame.draw.rect(self.screen, (25, 28, 42),
-                             (bar_x, by, bar_w, bar_h), border_radius=3)
-            pygame.draw.rect(self.screen, (50, 55, 75),
-                             (bar_x, by, bar_w, bar_h), 1, border_radius=3)
-            offline_surf = self.font_small.render("OFFLINE", True, (60, 65, 80))
-            self.screen.blit(offline_surf, (bar_x + bar_w // 2 - offline_surf.get_width() // 2, by + 1))
+            pygame.draw.rect(self.screen, SHIELD_BAR_BG,
+                             (bar_x, by, bar_w, SHIELD_BAR_HEIGHT), border_radius=SHIELD_BAR_BORDER_RADIUS)
+            pygame.draw.rect(self.screen, SHIELD_BAR_BORDER,
+                             (bar_x, by, bar_w, SHIELD_BAR_HEIGHT), 1, border_radius=SHIELD_BAR_BORDER_RADIUS)
+            offline_surf = self.font_small.render("OFFLINE", True, SHIELD_OFFLINE_COLOR)
+            self.screen.blit(offline_surf, (bar_x + bar_w // 2 - offline_surf.get_width() // 2, by + 2))
 
         # Horizontal accent divider between row 1 and row 2
         div_y = world_h + 34
@@ -1163,7 +1220,7 @@ class GUI:
             self.screen.blit(role_txt, (10 + name_txt.get_width() + 8, y2 + 4))
 
             if selected.is_subagent:
-                sub_txt = self.font_small.render("(subagent)", True, (100, 100, 140))
+                sub_txt = self.font_small.render("(subagent)", True, UI_SUBAGENT_TAG_COLOR)
                 self.screen.blit(sub_txt, (10 + name_txt.get_width() + role_txt.get_width() + 16, y2 + 6))
 
             mood_txt = self.font.render(
@@ -1208,29 +1265,24 @@ class GUI:
             alpha = 255 if age < NOTIFICATION_FADE_START else int((NOTIFICATION_FADE_START + NOTIFICATION_FADE_DURATION - age) / NOTIFICATION_FADE_DURATION * 255)
             alpha = max(0, min(255, alpha))
 
-            # Slide-in animation for first 0.3s
-            slide_offset = int((1.0 - min(age / 0.3, 1.0)) * 20)
+            slide_offset = int((1.0 - min(age / NOTIFICATION_SLIDE_DURATION, 1.0)) * NOTIFICATION_SLIDE_DISTANCE)
 
-            bg_w = surf.get_width() + 20  # extra room for accent stripe
+            bg_w = surf.get_width() + 20
             bg_h = surf.get_height() + 8
             bg = pygame.Surface((bg_w, bg_h), pygame.SRCALPHA)
             bg.fill((20, 20, 35, min(alpha, NOTIFICATION_BG_ALPHA)))
-            # Better border with border_radius
             cr, cg, cb = cyan
-            pygame.draw.rect(bg, (cr, cg, cb, min(alpha, 60)), bg.get_rect(), 1, border_radius=5)
-            # Left accent stripe
-            pygame.draw.rect(bg, (cr, cg, cb, min(alpha, 180)),
-                             pygame.Rect(0, 2, 3, bg_h - 4))
+            pygame.draw.rect(bg, (cr, cg, cb, min(alpha, NOTIFICATION_BORDER_ALPHA)), bg.get_rect(), 1, border_radius=5)
+            pygame.draw.rect(bg, (cr, cg, cb, min(alpha, NOTIFICATION_ACCENT_ALPHA)),
+                             pygame.Rect(0, 2, NOTIFICATION_ACCENT_WIDTH, bg_h - 4))
             surf.set_alpha(alpha)
 
             x = max(0, w - bg_w - 10 + slide_offset)
             self.screen.blit(bg, (x, y))
             self.screen.blit(surf, (x + 12, y + 4))
 
-            # Small tech corners on notification
             notif_rect = pygame.Rect(x, y, bg_w, bg_h)
-            corner_color = (cr, cg, cb)
-            draw_tech_corners(self.screen, notif_rect, corner_color, length=6, thickness=1)
+            draw_tech_corners(self.screen, notif_rect, (cr, cg, cb), length=NOTIFICATION_CORNER_LENGTH, thickness=1)
 
             y += bg_h + 4
 
