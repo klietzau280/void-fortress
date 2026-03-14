@@ -284,10 +284,12 @@ class Station:
         self.has_core = False
         self._dirty = True  # need to re-render
 
-        # Pre-render surface
+        # Pre-render surfaces - background covers max screen size so no tiling seams
         pw = self.GRID_W * self.CELL_PX
         ph = self.GRID_H * self.CELL_PX
-        self.background = draw_space_background(pw, ph)
+        bg_w = max(pw, 1920)  # cover up to 1920 wide
+        bg_h = max(ph, 1200)  # cover up to 1200 tall
+        self.background = draw_space_background(bg_w, bg_h)
         self.station_surface = pygame.Surface((pw, ph), pygame.SRCALPHA)
 
     def _stamp_template(self, template: list, cx: int, cy: int) -> bool:
@@ -500,17 +502,8 @@ class Station:
 
     def draw(self, screen: pygame.Surface, cam_x: float, cam_y: float,
              viewport_w: int = 0, viewport_h: int = 0):
-        # Ensure background covers the full viewport by tiling if needed
-        bg_w, bg_h = self.background.get_size()
-        if viewport_w > 0 and viewport_h > 0:
-            # Tile the background to cover any exposed area
-            start_x = int(-cam_x) % bg_w - bg_w
-            start_y = int(-cam_y) % bg_h - bg_h
-            for ty in range(start_y, viewport_h, bg_h):
-                for tx in range(start_x, viewport_w, bg_w):
-                    screen.blit(self.background, (tx, ty))
-        else:
-            screen.blit(self.background, (-cam_x, -cam_y))
+        # Background is pre-generated large enough to cover any screen size
+        screen.blit(self.background, (-cam_x, -cam_y))
 
         if self._dirty:
             self._render_station_surface()

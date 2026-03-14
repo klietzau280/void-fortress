@@ -308,6 +308,10 @@ class GUI:
     def __init__(self, demo_mode: bool = False):
         pygame.init()
         pygame.display.set_caption("Void Fortress")
+        # Use a mech sprite as the window icon
+        icon_sprites = create_agent_sprites("", "hull_acc_blue", scale=2)
+        icon = icon_sprites["stand"]
+        pygame.display.set_icon(icon)
         self.screen = pygame.display.set_mode((WINDOW_W, WINDOW_H), pygame.RESIZABLE)
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont(None, 18)
