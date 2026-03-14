@@ -955,6 +955,10 @@ class GUI:
                     self._build_from_event(event_key, agent.name, vis.px, vis.py)
             self._last_agent_count = len(self.sim.agents)
 
+            # Update grid scaling for current window size before moving agents
+            sw, sh = self.screen.get_size()
+            _update_grid_params(sw, sh - UI_H)
+
             # Update visuals
             for agent in self.sim.agents:
                 vis = self._ensure_visual(agent)
@@ -1027,9 +1031,6 @@ class GUI:
     def _render(self, dt):
         w, h = self.screen.get_size()
         world_h = h - UI_H
-
-        # Update grid→pixel mapping for current window size
-        _update_grid_params(w, world_h)
 
         # Station draws starfield background (1920x1200, covers full screen)
         self.station.draw(self.screen, self.cam_x, self.cam_y, w, world_h)
