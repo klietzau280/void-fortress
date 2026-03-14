@@ -76,6 +76,8 @@ POPUP_CORNER_LENGTH = 10
 
 # -- Agent visual --
 MECH_MOVE_SPEED = 150.0
+MECH_MOVE_SPEED_MAX = 600.0
+MECH_SPEED_RAMP_DIST = 200  # distance at which speed starts ramping up
 MECH_WALK_FRAME_INTERVAL = 0.15
 MECH_BOB_FREQUENCY = 1.2
 MECH_BOB_AMPLITUDE = 3
@@ -575,10 +577,11 @@ class AgentVisual:
             if math.sqrt(dx * dx + dy * dy) < MECH_ARRIVAL_THRESHOLD:
                 self._override_target = False
 
-        speed = MECH_MOVE_SPEED  # mechs move fast
         dx = self.target_px - self.px
         dy = self.target_py - self.py
         dist = math.sqrt(dx * dx + dy * dy)
+        # Ramp speed with distance — crawl nearby, zoom when far
+        speed = MECH_MOVE_SPEED + (MECH_MOVE_SPEED_MAX - MECH_MOVE_SPEED) * min(dist / MECH_SPEED_RAMP_DIST, 1.0)
         if dist > 1:
             move = min(speed * dt, dist)
             self.px += dx / dist * move
