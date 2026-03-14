@@ -155,8 +155,8 @@ class Simulation:
                     return a
 
         # Create new main agent for this session
-        agent = spawn_agent(self._next_id(), AgentRole.MAIN)
-        # Keep the random name from spawn_agent
+        taken = {a.name for a in self.agents}
+        agent = spawn_agent(self._next_id(), AgentRole.MAIN, exclude_names=taken)
         agent.is_subagent = False
         agent.activity = "thinking"
         agent.thought = "Starting up..."
@@ -178,7 +178,8 @@ class Simulation:
         # Find parent
         parent_id = self.active_sessions.get(event.session_id)
 
-        agent = spawn_agent(self._next_id(), role, parent_id=parent_id, is_subagent=True)
+        taken = {a.name for a in self.agents}
+        agent = spawn_agent(self._next_id(), role, parent_id=parent_id, is_subagent=True, exclude_names=taken)
 
         # Spawn near parent
         parent = None
@@ -227,8 +228,8 @@ class Simulation:
                        if sid in self.session_context_pct]
         return max(active_pcts) if active_pcts else None
 
-    def get_session_context_bars(self) -> list[tuple[str, float]]:
-        """Return list of (agent_name, used_pct) for all active sessions.
+    def get_session_context_bars(self) -> list[tuple[str, float, int]]:
+        """Return list of (agent_name, used_pct, agent_id) for all active sessions.
 
         Uses real context_window data when available, otherwise estimates
         from tool call count (FUEL_MAX_TOOL_CALLS = 100% usage).
@@ -241,14 +242,12 @@ class Simulation:
                 if a.id == agent_id:
                     name = a.name
                     break
-            # Prefer real context data, fall back to tool-call estimate
             if sid in self.session_context_pct:
                 pct = self.session_context_pct[sid]
             else:
                 calls = self.session_tool_calls.get(sid, 0)
                 pct = min(100.0, calls / fuel_max * 100.0)
-            bars.append((name, pct))
-        # Sort by usage descending so hottest session is first
+            bars.append((name, pct, agent_id))
         bars.sort(key=lambda b: b[1], reverse=True)
         return bars
 
@@ -564,14 +563,16 @@ class Simulation:
 
     def _demo_tick(self):
         """Generate fake activity for demo mode."""
+        taken = {a.name for a in self.agents}
         if not self.agents:
-            agent = spawn_agent(self._next_id(), AgentRole.MAIN)
+            agent = spawn_agent(self._next_id(), AgentRole.MAIN, exclude_names=taken)
             self.agents.append(agent)
             self.world.add_notification("Demo session started!", "🎮", "\033[92m")
 
         if random.random() < DEMO_SPAWN_CHANCE and len(self.agents) < DEMO_MAX_AGENTS:
             role = random.choice(list(AgentRole))
-            agent = spawn_agent(self._next_id(), role, parent_id=self.agents[0].id, is_subagent=True)
+            taken = {a.name for a in self.agents}
+            agent = spawn_agent(self._next_id(), role, parent_id=self.agents[0].id, is_subagent=True, exclude_names=taken)
             self.agents.append(agent)
             self.world.add_notification(f"{agent.name} ({role.value}) spawned!", "👋", "\033[92m")
 

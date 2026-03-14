@@ -1139,52 +1139,58 @@ class GUI:
         pygame.draw.line(self.screen, UI_PANEL_DIVIDER,
                          (shield_x - 10, world_h + 4), (shield_x - 10, world_h + UI_H - 18), 1)
 
-        bars = self.sim.get_session_context_bars()
+        bars = self.sim.get_session_context_bars()  # [(name, used_pct, agent_id), ...]
         bar_x = shield_x
         bar_w = SHIELD_PANEL_WIDTH
         by = shield_y
 
         if bars:
             for i in range(min(len(bars), SHIELD_MAX_BARS)):
-                name, used_pct = bars[i]
+                name, used_pct, agent_id = bars[i]
                 fuel_pct = max(0.0, min(1.0, 1.0 - used_pct / 100.0))
                 remaining = int(100 - used_pct)
 
+                # Use session hull color for the bar, tinted by health
+                vis = self.agent_visuals.get(agent_id)
+                session_color = PALETTE.get(vis.session_color, PALETTE["energy_cyan"]) if vis else PALETTE["energy_cyan"]
+
+                # Desaturate toward yellow/red when low
                 if fuel_pct > FUEL_WARN_THRESHOLD:
-                    bar_color = PALETTE["energy_cyan"]
+                    bar_color = session_color
                 elif fuel_pct > FUEL_CRITICAL_THRESHOLD:
                     bar_color = PALETTE["flame_yellow"]
                 else:
                     bar_color = PALETTE["mood_WRATHFUL"]
 
-                # Label row: name left, percentage right
+                # Label row: colored dot + name left, percentage right
+                pygame.draw.circle(self.screen, session_color, (bar_x + 4, by + 7), 3)
                 name_surf = self.font.render(name[:SHIELD_BAR_NAME_MAX_LEN], True, SHIELD_BAR_NAME_COLOR)
                 pct_surf = self.font.render(f"{remaining}%", True, bar_color)
-                self.screen.blit(name_surf, (bar_x, by))
+                self.screen.blit(name_surf, (bar_x + 12, by))
                 self.screen.blit(pct_surf, (bar_x + bar_w - pct_surf.get_width(), by))
-                by += 14
 
-                # Bar track
+                # Bar track (tight: 2px gap between label and bar)
+                bar_y = by + name_surf.get_height() + 1
                 pygame.draw.rect(self.screen, SHIELD_BAR_BG,
-                                 (bar_x, by, bar_w, SHIELD_BAR_HEIGHT), border_radius=SHIELD_BAR_BORDER_RADIUS)
+                                 (bar_x, bar_y, bar_w, SHIELD_BAR_HEIGHT), border_radius=SHIELD_BAR_BORDER_RADIUS)
 
-                # Filled portion
+                # Filled portion in session color
                 fill_w = max(1, int(fuel_pct * bar_w))
                 pygame.draw.rect(self.screen, bar_color,
-                                 (bar_x, by, fill_w, SHIELD_BAR_HEIGHT), border_radius=SHIELD_BAR_BORDER_RADIUS)
+                                 (bar_x, bar_y, fill_w, SHIELD_BAR_HEIGHT), border_radius=SHIELD_BAR_BORDER_RADIUS)
 
                 # Glow on the fill edge
                 if fill_w > SHIELD_EDGE_GLOW_WIDTH:
                     r, g, b = bar_color
                     edge_glow = pygame.Surface((SHIELD_EDGE_GLOW_WIDTH, SHIELD_BAR_HEIGHT), pygame.SRCALPHA)
                     edge_glow.fill((r, g, b, SHIELD_EDGE_GLOW_ALPHA))
-                    self.screen.blit(edge_glow, (bar_x + fill_w - SHIELD_EDGE_GLOW_WIDTH, by))
+                    self.screen.blit(edge_glow, (bar_x + fill_w - SHIELD_EDGE_GLOW_WIDTH, bar_y))
 
                 # Border
                 pygame.draw.rect(self.screen, SHIELD_BAR_BORDER,
-                                 (bar_x, by, bar_w, SHIELD_BAR_HEIGHT), 1, border_radius=SHIELD_BAR_BORDER_RADIUS)
+                                 (bar_x, bar_y, bar_w, SHIELD_BAR_HEIGHT), 1, border_radius=SHIELD_BAR_BORDER_RADIUS)
 
-                by += SHIELD_BAR_HEIGHT + 2
+                by = bar_y + SHIELD_BAR_HEIGHT + 4
         else:
             # No sessions — show "VOID SHIELDS" header + offline bar
             header_surf = self.font.render("VOID SHIELDS", True, cyan)

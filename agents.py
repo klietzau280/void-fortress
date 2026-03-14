@@ -392,9 +392,10 @@ class Agent:
         self.thought_timer = CELEBRATION_THOUGHT_TIMER
 
 
-def spawn_agent(agent_id, role=None, parent_id=None, is_subagent=False):
+def spawn_agent(agent_id, role=None, parent_id=None, is_subagent=False, exclude_names=None):
     """Create a new agent with random traits."""
-    name = random.choice(AGENT_NAMES)
+    available = [n for n in AGENT_NAMES if n not in (exclude_names or ())]
+    name = random.choice(available) if available else random.choice(AGENT_NAMES)
     role = role or random.choice(list(AgentRole))
     personality = random.choice(PERSONALITY_TRAITS)
     mood_stability = random.uniform(MOOD_STABILITY_MIN, MOOD_STABILITY_MAX)
