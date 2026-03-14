@@ -316,9 +316,16 @@ class GUI:
         self.font_small = pygame.font.SysFont(None, 14)
 
         # Clear stale events so we don't replay old session data
-        events_file = os.path.expanduser("~/.agent-valley/events.jsonl")
+        self._data_dir = os.path.expanduser("~/.agent-valley")
+        os.makedirs(self._data_dir, exist_ok=True)
+        events_file = os.path.join(self._data_dir, "events.jsonl")
         if os.path.exists(events_file):
             open(events_file, "w").close()
+
+        # Write PID file so hook.sh knows we're running (enables sounds)
+        self._pid_file = os.path.join(self._data_dir, ".gui.pid")
+        with open(self._pid_file, "w") as f:
+            f.write(str(os.getpid()))
 
         self.sim = Simulation(demo_mode=demo_mode)
         self.agent_visuals: dict[int, AgentVisual] = {}
@@ -597,8 +604,10 @@ class GUI:
             self._render(dt)
             self.clock.tick(FPS)
 
-        # Save on exit
+        # Save on exit and remove PID file (disables sounds)
         self.station.save()
+        if os.path.exists(self._pid_file):
+            os.remove(self._pid_file)
         pygame.quit()
 
     def _click_select(self, mx, my, world_h):
