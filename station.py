@@ -290,7 +290,7 @@ class Station:
         bg_w = max(pw, 1920)  # cover up to 1920 wide
         bg_h = max(ph, 1200)  # cover up to 1200 tall
         self.background = draw_space_background(bg_w, bg_h)
-        self.station_surface = pygame.Surface((pw, ph), pygame.SRCALPHA)
+        self._cell_cache: list[tuple] = []
 
     def _stamp_template(self, template: list, cx: int, cy: int) -> bool:
         """Stamp a structure template onto the grid at (cx, cy). Returns False if blocked."""
@@ -486,29 +486,32 @@ class Station:
         return False
 
     def _render_station_surface(self):
-        """Re-render the station to its surface."""
-        self.station_surface.fill((0, 0, 0, 0))
+        """Cache non-empty cell positions and colors for direct drawing."""
+        self._cell_cache = []
         px = self.CELL_PX
-
         for y in range(self.GRID_H):
             for x in range(self.GRID_W):
                 cell = self.grid[y][x]
                 if cell == Cell.EMPTY:
                     continue
                 color = CELL_COLORS.get(cell, (100, 100, 100))
-                pygame.draw.rect(self.station_surface, color, (x * px, y * px, px, px))
-
+                self._cell_cache.append((x * px, y * px, px, px, color))
         self._dirty = False
 
     def draw(self, screen: pygame.Surface, cam_x: float, cam_y: float,
              viewport_w: int = 0, viewport_h: int = 0):
-        # Background is pre-generated large enough to cover any screen size
+        # Fill with space color so camera panning beyond the background edge isn't black
+        screen.fill(PALETTE["space_bg"], (0, 0, viewport_w or screen.get_width(), viewport_h or screen.get_height()))
         screen.blit(self.background, (-cam_x, -cam_y))
 
         if self._dirty:
             self._render_station_surface()
 
-        screen.blit(self.station_surface, (-cam_x, -cam_y))
+        # Draw station cells directly to screen (avoids SRCALPHA surface issues)
+        cam_xi = int(cam_x)
+        cam_yi = int(cam_y)
+        for cx, cy, cw, ch, color in self._cell_cache:
+            pygame.draw.rect(screen, color, (cx - cam_xi, cy - cam_yi, cw, ch))
 
         # Animated effects
         now = time.time()
@@ -597,8 +600,10 @@ class Station:
         self.has_core = False
         self._dirty = True
         pw, ph = self.get_pixel_size()
-        self.background = draw_space_background(pw, ph)
-        self.station_surface = pygame.Surface((pw, ph), pygame.SRCALPHA)
+        bg_w = max(pw, 1920)
+        bg_h = max(ph, 1200)
+        self.background = draw_space_background(bg_w, bg_h)
+        self._cell_cache = []
         if os.path.exists(SAVE_FILE):
             os.remove(SAVE_FILE)
 

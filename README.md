@@ -2,7 +2,7 @@
 
 ### *In the grim darkness of the far future, there is only code.*
 
-Watch your Claude Code agents as construction mechs building a space fortress in real-time. Every tool call forges another bulkhead. Every subagent deploys another battle-brother. Every error breaches the hull.
+Watch your Claude Code agents as construction mechs building a space fortress in real-time. Every tool call forges another bulkhead. Every subagent deploys another battle-brother. Every error awakens the Necrons.
 
 Your fortress is unique. Your fortress is yours.
 
@@ -31,12 +31,13 @@ Claw wreckers with grabber arms and welding sparks. Session color-coded — you 
 ## Features
 
 - **Procedural fortress** grows as you code — Edit/Write builds armory walls, Read deploys augur arrays, Bash lays plasma conduits, Grep raises sensor spires
-- **Claw wrecker mechs** fly to build sites with thruster flames, weld with sparks
-- **Grimdark voice lines** — *"Yes my lord"*, *"Victory is ours"*, *"Requesting reinforcements"*
+- **Claw wrecker mechs** fly to build sites with thruster flames, weld with sparks — coding agents work directly on the station, idle agents retreat to the corner
+- **Space radio comms** — all voice lines processed through a bandpass radio filter with static crackle and hiss, like transmissions from a distant void ship
+- **Necron incursions** — errors awaken tomb world horrors: *"NECRON MONOLITH PHASING INTO THE REPO!"*, *"Scarab swarm consuming the build artifacts!"*, *"The Deceiver's hand is in this logic"*
 - **Pilot dossiers** — click any mech to inspect its battle-brother with a Doom-style portrait
 - **Session crews** — multiple Claude Code sessions get different hull colors
-- **Battle moods** — ZEALOUS when coding, WRATHFUL when fixing bugs, GLORIOUS on completion, BESIEGED when prod breaks
-- **War thoughts** — *"The Codex Astartes supports this refactor"*, *"git blame reveals... HERESY"*
+- **Battle moods** — ZEALOUS when coding, WRATHFUL when fixing bugs, GLORIOUS on completion, BESIEGED when the Necrons attack
+- **War thoughts** — *"The Codex Astartes supports this refactor"*, *"git blame reveals... HERESY"*, *"Cryptek sorcery in the stack trace"*
 
 ## Quick Start
 
@@ -82,6 +83,13 @@ python3 gui.py
 | Bash | Plasma Conduit, Reactor |
 | Agent spawn | Armory, Shield Generator, Barracks |
 
+## Agent Behavior
+
+- **Coding / Fixing / Testing** — mechs fly to the station and work on structures
+- **Reading / Searching / Thinking** — mechs patrol their activity zones
+- **Idle / Waiting** — mechs retreat to the bottom-right corner and hold position
+- **Errors** — 50% chance of full Necron panic, tomb world signatures, gauss flayer hits
+
 ## Requirements
 
 - **macOS**
@@ -91,10 +99,10 @@ python3 gui.py
 
 ## Credits
 
-- **Voice**: [Sci-Fi Trooper Voice Pack](https://opengameart.org/content/sci-fi-trooper-voice-pack-54-lines) by Angus Macnaughton (CC-BY 4.0)
+- **Voice**: [Sci-Fi Trooper Voice Pack](https://opengameart.org/content/sci-fi-trooper-voice-pack-54-lines) by Angus Macnaughton (CC-BY 4.0), processed through space radio filter
 - **Portraits**: Procedural, inspired by Doom's STFST status bar sprites
 - **Engine**: [pygame](https://www.pygame.org/)
 
 ---
 
-*The Emperor protects. The Codex Astartes supports this action.*
+*The Emperor protects. The Codex Astartes supports this action. The Necrons do not care.*

@@ -73,6 +73,7 @@ if [ -f "$LOCK_FILE" ]; then
 fi
 
 echo "$NOW" > "$LOCK_FILE"
+
 osascript -e "do shell script \"afplay -v $VOLUME '$SOUND' &\"" &
 
 exit 0

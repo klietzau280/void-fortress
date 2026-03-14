@@ -48,8 +48,8 @@ class World:
             "testing":   Zone(10, 12, 20, 8),
             "fixing":    Zone(35, 12, 15, 8),
             "thinking":  Zone(52, 12, 15, 8),
-            "idle":      Zone(20, 8, 30, 6),
-            "waiting":   Zone(20, 8, 30, 6),
+            "idle":      Zone(62, 16, 12, 6),
+            "waiting":   Zone(62, 16, 12, 6),
         }
 
         self.notifications: List[Notification] = []

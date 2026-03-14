@@ -581,7 +581,7 @@ class GUI:
             all_notifs = self.sim.world.notifications
             if len(all_notifs) > self._seen_notif_count:
                 for notif in all_notifs[self._seen_notif_count:]:
-                    txt = f"{notif.icon} {notif.text}"
+                    txt = notif.text
                     if len(txt) > 50:
                         txt = txt[:47] + "..."
                     surf = self.font.render(txt, True, PALETTE["white"])
@@ -799,7 +799,7 @@ class GUI:
             pygame.draw.rect(bg, (80, 80, 120, min(alpha, 200)), bg.get_rect(), 1, border_radius=4)
             surf.set_alpha(alpha)
 
-            x = w - bg.get_width() - 10
+            x = max(0, w - bg.get_width() - 10)
             self.screen.blit(bg, (x, y))
             self.screen.blit(surf, (x + 8, y + 4))
             y += bg.get_height() + 4

@@ -226,13 +226,16 @@ class Simulation:
                 agent.thought = description
                 agent.thought_timer = 4.0
 
-            # Move toward appropriate zone
-            zone = self.world.get_zone_for_activity(activity)
-            cx, cy = zone.center()
-            agent.target_x = cx + random.randint(-3, 3)
-            agent.target_y = cy + random.randint(-2, 2)
-            agent.target_x = max(2, min(self.world.width - 10, agent.target_x))
-            agent.target_y = max(2, min(self.world.height - 6, agent.target_y))
+            # Move toward appropriate zone (non-build activities only)
+            # Build activities (coding, fixing, testing) are positioned by the GUI
+            # which flies them to the station build site
+            if activity not in ("coding", "fixing", "testing"):
+                zone = self.world.get_zone_for_activity(activity)
+                cx, cy = zone.center()
+                agent.target_x = cx + random.randint(-3, 3)
+                agent.target_y = cy + random.randint(-2, 2)
+                agent.target_x = max(2, min(self.world.width - 10, agent.target_x))
+                agent.target_y = max(2, min(self.world.height - 6, agent.target_y))
 
             # Update mood based on activity
             mood_options = ACTIVITY_MOOD_WEIGHTS.get(activity, [Mood.THINKING])
@@ -257,15 +260,28 @@ class Simulation:
         elif event.event_name == "PostToolUseFailure":
             agent = self._find_agent_for_event(event)
             if agent:
-                agent.activity = "fixing"
-                agent.mood = Mood.FRUSTRATED
-                error_msg = event.error or "Something went wrong"
-                agent.thought = f"Error: {error_msg[:40]}"
+                # Necron incursion on errors
+                if random.random() < 0.5:
+                    agent.activity = "panicking"
+                    agent.mood = Mood.PANICKING
+                    agent.thought = random.choice(THOUGHTS["panicking"])
+                else:
+                    agent.activity = "fixing"
+                    agent.mood = Mood.FRUSTRATED
+                    agent.thought = random.choice(THOUGHTS["fixing"])
                 agent.thought_timer = 5.0
                 self.incidents += 1
+                necron_alerts = [
+                    f"NECRON INCURSION! {agent.name} under attack!",
+                    f"{agent.name}: Tomb World signature detected!",
+                    f"Gauss flayer hit on {event.tool_name}!",
+                    f"{agent.name}: Xenos corruption in {event.tool_name}!",
+                    f"Scarab swarm consuming {event.tool_name}!",
+                    f"Cryptek interference on {event.tool_name}!",
+                ]
                 if notify:
                     self.world.add_notification(
-                        f"{agent.name}: tool failure! {event.tool_name}",
+                        random.choice(necron_alerts),
                         "💥", "\033[91m",
                     )
 
@@ -350,8 +366,20 @@ class Simulation:
             # Gradual mood drift
             agent.update_mood(dt)
 
-            # Idle wander
-            if (agent.x == agent.target_x and agent.y == agent.target_y
+            # Idle/waiting agents fly to the bottom-right corner and chill
+            if agent.activity in ("idle", "waiting"):
+                idle_zone = self.world.get_zone_for_activity("idle")
+                zx, zy = idle_zone.center()
+                if abs(agent.target_x - zx) > 5 or abs(agent.target_y - zy) > 4:
+                    agent.target_x = zx + random.randint(-2, 2)
+                    agent.target_y = zy + random.randint(-1, 1)
+                    agent.target_x = max(2, min(self.world.width - 4, agent.target_x))
+                    agent.target_y = max(2, min(self.world.height - 4, agent.target_y))
+            # Build activities stay put (GUI positions them at the station)
+            elif agent.activity in ("coding", "fixing", "testing"):
+                pass
+            # Other active agents wander within their zone
+            elif (agent.x == agent.target_x and agent.y == agent.target_y
                     and random.random() < 0.02):
                 agent.set_new_wander_target(min(self.world.width, 65), min(self.world.height, 22))
 
