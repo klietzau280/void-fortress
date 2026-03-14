@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="screenshots/mech_weld.png" width="120" />
+  <img src="screenshots/gameplay.png" width="700" />
 </p>
 
 <h1 align="center">VOID FORTRESS</h1>
@@ -19,7 +19,58 @@
 
 Your Claude Code agents are construction mechs building a space fortress in real-time. Every tool call forges another bulkhead. Every subagent deploys another battle-brother. Every error awakens the Necrons.
 
-**Your fortress is unique. Your fortress is yours.**
+**Your fortress is unique. Your fortress is yours. And when context compacts — it crumbles.**
+
+---
+
+## Quick Start
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/klietzau280/void-fortress/main/install-remote.sh | bash
+```
+
+Then run `void-fortress` (or `void-fortress --demo` to try without Claude Code).
+
+<details>
+<summary>Manual install</summary>
+
+```bash
+git clone https://github.com/klietzau280/void-fortress.git
+cd void-fortress
+./install.sh
+python3 gui.py
+```
+
+</details>
+
+<details>
+<summary>Uninstall</summary>
+
+```bash
+./uninstall.sh
+```
+
+Removes the hooks from Claude Code. Your other settings are untouched.
+
+</details>
+
+---
+
+## Features
+
+| | |
+|---|---|
+| **Procedural fortress** | Grows as you code — Edit builds armory walls, Read deploys augur arrays, Bash lays plasma conduits, Grep raises sensor spires |
+| **Context compaction** | When Claude Code compacts a session, every structure that agent built is **destroyed in explosive fashion** — the fortress crumbles |
+| **Claw wrecker mechs** | Fly to build sites with thruster flames, weld with sparks. Session color-coded hull accents |
+| **Void Shields** | Per-session fuel bars color-coded to each mech's hull — watch context drain in real-time |
+| **Structure labels** | Hover any structure to see what it is and who built it |
+| **Pilot dossiers** | Click a mech to inspect its battle-brother — Doom-style portrait, mood-glow frame, stats |
+| **Necron incursions** | Errors awaken tomb world horrors: *"NECRON MONOLITH PHASING INTO THE REPO!"* |
+| **Space radio comms** | Voice lines through bandpass filter with static crackle, like transmissions from a distant void ship |
+| **Battle moods** | ZEALOUS when coding, WRATHFUL fixing bugs, GLORIOUS on completion, BESIEGED under attack |
+| **150+ war thoughts** | *"The Codex Astartes supports this refactor"* ... *"git blame reveals... HERESY"* |
+| **HUD polish** | Tech corners, scan lines, glow text, accent dividers — grimdark military holographic display |
 
 ---
 
@@ -34,7 +85,7 @@ Your Claude Code agents are construction mechs building a space fortress in real
   </tr>
 </table>
 
-Doom-style pilot portraits. Each battle-brother gets a unique face. Visors glow with their current mood.
+Doom-style pilot portraits. 56 unique battle-brothers. Visors glow with their current mood.
 
 ## The Mechs
 
@@ -46,67 +97,6 @@ Doom-style pilot portraits. Each battle-brother gets a unique face. Visors glow 
   </tr>
 </table>
 
-Claw wreckers with grabber arms and welding sparks. Session color-coded — you always know which crew belongs to which Claude Code instance.
-
----
-
-## Features
-
-| | |
-|---|---|
-| **Procedural fortress** | Grows as you code — Edit/Write builds armory walls, Read deploys augur arrays, Bash lays plasma conduits, Grep raises sensor spires |
-| **Claw wrecker mechs** | Fly to build sites with thruster flames, weld with sparks — coding agents work the station, idle agents retreat to the corner |
-| **Space radio comms** | All voice lines through a bandpass radio filter with static crackle and hiss, like transmissions from a distant void ship |
-| **Necron incursions** | Errors awaken tomb world horrors: *"NECRON MONOLITH PHASING INTO THE REPO!"* ... *"The Deceiver's hand is in this logic"* |
-| **Pilot dossiers** | Click any mech to inspect its battle-brother with a Doom-style portrait, mood-glow frame, header bar |
-| **Void Shields** | Per-session context window bar graph — watch each session's fuel drain in real-time |
-| **HUD polish** | Tech corner brackets, scan lines, glow text, accent dividers — grimdark military holographic display |
-| **Session crews** | Multiple Claude Code sessions get different hull colors |
-| **Battle moods** | ZEALOUS when coding, WRATHFUL fixing bugs, GLORIOUS on completion, BESIEGED when the Necrons attack |
-| **War thoughts** | *"The Codex Astartes supports this refactor"* ... *"git blame reveals... HERESY"* |
-
----
-
-## Quick Start
-
-**One-liner install:**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/klietzau280/void-fortress/main/install-remote.sh | bash
-```
-
-**Or clone manually:**
-
-```bash
-git clone https://github.com/klietzau280/void-fortress.git
-cd void-fortress
-./install.sh
-```
-
-Then launch:
-
-```bash
-python3 gui.py
-```
-
-That's it. Open Claude Code in another terminal and watch the mechs build.
-
-### Demo Mode
-
-Don't have Claude Code? Watch the mechs anyway:
-
-```bash
-python3 gui.py --demo
-```
-
-### Uninstall
-
-```bash
-./uninstall.sh
-```
-
-Removes the hooks from Claude Code. Your other settings are untouched.
-
 ---
 
 ## Controls
@@ -114,6 +104,7 @@ Removes the hooks from Claude Code. Your other settings are untouched.
 | Key | Action |
 |:---:|--------|
 | **Click** | Inspect pilot dossier |
+| **Hover** | Structure label (name + builder) |
 | **Tab** | Cycle mechs |
 | **Space** | Pause / resume |
 | **R** | Purge and rebuild |
@@ -131,16 +122,18 @@ Read                -->   Lance Battery, Augur Array
 Grep / Glob         -->   Sensor Spire, Lance Battery
 Bash                -->   Plasma Conduit, Reactor
 Agent spawn         -->   Armory, Shield Generator, Barracks
+Context compact     -->   EVERYTHING EXPLODES
 ```
 
 ## Agent Behavior
 
 | State | Behavior |
 |-------|----------|
-| Coding / Fixing / Testing | Mechs fly to the station and work on structures |
-| Reading / Searching / Thinking | Mechs patrol their activity zones |
-| Idle / Waiting | Mechs retreat to the bottom-right corner and hold position |
-| Errors | 50% chance of full Necron panic, tomb world signatures, gauss flayer hits |
+| Coding / Fixing / Testing | Mechs fly to the station and build |
+| Reading / Searching / Thinking | Mechs orbit near the station |
+| Idle / Waiting | Mechs retreat to the corner |
+| Errors | Necron panic — tomb world signatures, gauss flayer hits |
+| Context compaction | All structures built by that agent are destroyed |
 
 ---
 
