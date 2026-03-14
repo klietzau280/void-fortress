@@ -86,10 +86,16 @@ PORTRAIT_SEED_PRIME = 7919
 PORTRAIT_SEED_MOD = 10000
 
 # -- Agent position mapping (grid to pixel) --
+# Base values for 960x530 world area; scaled dynamically by _agent_grid_params()
+AGENT_BASE_WORLD_W = 960
+AGENT_BASE_WORLD_H = 530  # 640 - UI_H
 AGENT_PX_SCALE = 8
 AGENT_PX_OFFSET_X = 80
 AGENT_PY_SCALE = 12
 AGENT_PY_OFFSET_Y = 60
+AGENT_GRID_W = 80   # world.width
+AGENT_GRID_H = 24   # world.height
+AGENT_FILL_RATIO = 0.85  # agents fill 85% of visible area
 
 # -- Engine glow --
 ENGINE_GLOW_HEIGHT = 6
@@ -506,6 +512,30 @@ SESSION_COLORS = [
 ]
 
 
+# Current screen-dependent grid→pixel mapping (updated each frame by GUI)
+_grid_scale_x = AGENT_PX_SCALE
+_grid_scale_y = AGENT_PY_SCALE
+_grid_offset_x = AGENT_PX_OFFSET_X
+_grid_offset_y = AGENT_PY_OFFSET_Y
+
+
+def _update_grid_params(screen_w: int, world_h: int):
+    """Recompute grid→pixel scale so agents fill the visible world area."""
+    global _grid_scale_x, _grid_scale_y, _grid_offset_x, _grid_offset_y
+    usable_w = screen_w * AGENT_FILL_RATIO
+    usable_h = world_h * AGENT_FILL_RATIO
+    _grid_scale_x = usable_w / AGENT_GRID_W
+    _grid_scale_y = usable_h / AGENT_GRID_H
+    _grid_offset_x = (screen_w - usable_w) / 2
+    _grid_offset_y = (world_h - usable_h) / 2
+
+
+def grid_to_px(gx: float, gy: float) -> tuple[float, float]:
+    """Convert grid coordinates to pixel coordinates."""
+    return (gx * _grid_scale_x + _grid_offset_x,
+            gy * _grid_scale_y + _grid_offset_y)
+
+
 class AgentVisual:
     """Visual state for an agent."""
 
@@ -514,9 +544,10 @@ class AgentVisual:
         hull_color = session_color or random.choice(HULL_COLORS)
         self.session_color = hull_color
         self.sprites = create_agent_sprites("", hull_color, scale=3)
-        self.portrait_seed = agent.id * PORTRAIT_SEED_PRIME + hash(agent.name) % PORTRAIT_SEED_MOD  # unique per agent
-        self.px = float(agent.x * AGENT_PX_SCALE + AGENT_PX_OFFSET_X)
-        self.py = float(agent.y * AGENT_PY_SCALE + AGENT_PY_OFFSET_Y)
+        self.portrait_seed = agent.id * PORTRAIT_SEED_PRIME + hash(agent.name) % PORTRAIT_SEED_MOD
+        px, py = grid_to_px(agent.x, agent.y)
+        self.px = px
+        self.py = py
         self.target_px = self.px
         self.target_py = self.py
         self.walk_frame = 0
@@ -533,8 +564,9 @@ class AgentVisual:
 
     def update(self, agent: Agent, dt: float, font: pygame.font.Font):
         if not self.sitting and not self._override_target:
-            self.target_px = float(agent.x * AGENT_PX_SCALE + AGENT_PX_OFFSET_X)
-            self.target_py = float(agent.y * AGENT_PY_SCALE + AGENT_PY_OFFSET_Y)
+            tx, ty = grid_to_px(agent.x, agent.y)
+            self.target_px = tx
+            self.target_py = ty
 
         # Clear override once we've arrived
         if self._override_target:
@@ -995,6 +1027,9 @@ class GUI:
     def _render(self, dt):
         w, h = self.screen.get_size()
         world_h = h - UI_H
+
+        # Update grid→pixel mapping for current window size
+        _update_grid_params(w, world_h)
 
         # Station draws starfield background (1920x1200, covers full screen)
         self.station.draw(self.screen, self.cam_x, self.cam_y, w, world_h)
