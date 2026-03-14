@@ -14,7 +14,7 @@ import math
 import pygame
 
 from simulation import Simulation
-from agents import Agent, Mood, AgentRole
+from agents import Agent, Mood
 from sprites import (
     PALETTE, HULL_COLORS,
     create_agent_sprites, create_mood_icon,
@@ -642,23 +642,25 @@ class AgentVisual:
             rect = pygame.Rect(sx - 2, sy - 2, mech_w + 4, idle_h + 4)
             pygame.draw.rect(screen, SELECTION_BORDER_COLOR, rect, 2, border_radius=3)
 
-        # Name tag to the RIGHT of the mech
+        # Name tag + role to the RIGHT of the mech
+        role_color = ROLE_COLORS.get(agent.role.value, PALETTE["white"])
+        role_label = agent.role.value
         name_surf = name_font.render(agent.name, True, PALETTE["white"])
-        name_bg = pygame.Surface((name_surf.get_width() + 6, name_surf.get_height() + 2), pygame.SRCALPHA)
+        role_surf = tag_font.render(role_label, True, role_color)
+        tag_w = name_surf.get_width() + role_surf.get_width() + 10
+        tag_h = name_surf.get_height() + 2
+        name_bg = pygame.Surface((tag_w, tag_h), pygame.SRCALPHA)
         name_bg.fill((0, 0, 0, NAME_TAG_BG_ALPHA))
         nx = sx + mech_w + 4
         ny = sy + idle_h // 2 - name_bg.get_height() // 2
         screen.blit(name_bg, (nx, ny))
         screen.blit(name_surf, (nx + 3, ny + 1))
+        screen.blit(role_surf, (nx + name_surf.get_width() + 7, ny + 3))
 
-        if agent.is_subagent:
-            tag = tag_font.render(agent.role.value, True, SUBAGENT_ROLE_TAG_COLOR)
-            screen.blit(tag, (nx, ny + name_bg.get_height() + 1))
-
-        # Mood icon to the right of the name
+        # Mood icon to the right of the tag
         mood_icon = mood_icons.get(agent.mood.label)
         if mood_icon:
-            screen.blit(mood_icon, (nx + name_bg.get_width() + 2, ny))
+            screen.blit(mood_icon, (nx + tag_w + 2, ny))
 
         # Thought bubble above mech
         if self.bubble_surface and self.bubble_timer > 0:
@@ -797,7 +799,7 @@ class GUI:
 
     def _check_pending_core(self):
         """Check if the mech has arrived at center to build the core."""
-        if not hasattr(self, '_pending_core') or not self._pending_core:
+        if not self._pending_core:
             return
         if self.station.has_core:
             self._pending_core = None
@@ -931,8 +933,9 @@ class GUI:
                 for agent in self.sim.agents:
                     if agent.activity not in ("idle", "waiting"):
                         vis = self.agent_visuals.get(agent.id)
-                        px = vis.px if vis else 200
-                        py = vis.py if vis else 200
+                        fallback_px, fallback_py = grid_to_px(agent.x, agent.y)
+                        px = vis.px if vis else fallback_px
+                        py = vis.py if vis else fallback_py
                         tool = {"coding": "Edit", "reading": "Read", "searching": "Grep",
                                 "fixing": "Bash", "thinking": "Agent"}.get(agent.activity, "Edit")
                         self._build_from_tool(tool, agent.name, px, py)
@@ -944,8 +947,9 @@ class GUI:
                 for agent in self.sim.agents:
                     if agent.mood == Mood.FRUSTRATED or agent.mood == Mood.PANICKING:
                         vis = self.agent_visuals.get(agent.id)
-                        px = vis.px if vis else 200
-                        py = vis.py if vis else 200
+                        fallback_px, fallback_py = grid_to_px(agent.x, agent.y)
+                        px = vis.px if vis else fallback_px
+                        py = vis.py if vis else fallback_py
                         self._build_from_event("PostToolUseFailure", agent.name, px, py)
                         break
 
@@ -1303,7 +1307,7 @@ class GUI:
         now = time.time()
         cyan = PALETTE["energy_cyan"]
         y = 10
-        for surf, t in reversed(self.notification_surfs[-5:]):
+        for surf, t in reversed(self.notification_surfs[-NOTIFICATION_MAX_DISPLAY:]):
             age = now - t
             alpha = 255 if age < NOTIFICATION_FADE_START else int((NOTIFICATION_FADE_START + NOTIFICATION_FADE_DURATION - age) / NOTIFICATION_FADE_DURATION * 255)
             alpha = max(0, min(255, alpha))

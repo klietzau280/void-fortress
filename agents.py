@@ -394,8 +394,15 @@ class Agent:
 
 def spawn_agent(agent_id, role=None, parent_id=None, is_subagent=False, exclude_names=None):
     """Create a new agent with random traits."""
-    available = [n for n in AGENT_NAMES if n not in (exclude_names or ())]
-    name = random.choice(available) if available else random.choice(AGENT_NAMES)
+    exclude = exclude_names or ()
+    available = [n for n in AGENT_NAMES if n not in exclude]
+    if available:
+        name = random.choice(available)
+    else:
+        # All names taken — append a numeral to a random name
+        base = random.choice(AGENT_NAMES)
+        suffix = len(exclude) - len(AGENT_NAMES) + 2
+        name = f"{base}-{suffix}"
     role = role or random.choice(list(AgentRole))
     personality = random.choice(PERSONALITY_TRAITS)
     mood_stability = random.uniform(MOOD_STABILITY_MIN, MOOD_STABILITY_MAX)

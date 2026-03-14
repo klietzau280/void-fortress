@@ -569,7 +569,7 @@ class Simulation:
             self.agents.append(agent)
             self.world.add_notification("Demo session started!", "🎮", "\033[92m")
 
-        if random.random() < DEMO_SPAWN_CHANCE and len(self.agents) < DEMO_MAX_AGENTS:
+        if random.random() < DEMO_SPAWN_CHANCE and len(self.agents) < DEMO_MAX_AGENTS and self.agents:
             role = random.choice(list(AgentRole))
             taken = {a.name for a in self.agents}
             agent = spawn_agent(self._next_id(), role, parent_id=self.agents[0].id, is_subagent=True, exclude_names=taken)
