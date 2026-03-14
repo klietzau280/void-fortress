@@ -41,6 +41,7 @@ class Simulation:
         self.agent_satisfaction = 0.75
         self.selected_agent_id: int | None = None
         self.demo_mode = demo_mode
+        self.recent_event_names: list[str] = []  # GUI drains this for sound playback
 
         # Event tracking
         self.event_reader = EventReader()
@@ -166,6 +167,8 @@ class Simulation:
     def _process_event(self, event: HookEvent, notify: bool = True):
         """Process a single hook event and update simulation state."""
         self.last_event_time = event.timestamp
+        if notify:
+            self.recent_event_names.append(event.event_name)
 
         if event.event_name == "SessionStart":
             agent = self._ensure_session_agent(event.session_id)
