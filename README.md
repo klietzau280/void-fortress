@@ -33,6 +33,17 @@ Your Claude Code agents are construction mechs building a space fortress in real
 
 ## Quick Start
 
+### Windows
+
+```bash
+git clone https://github.com/klietzau280/void-fortress.git
+cd void-fortress
+python install.py
+python gui.py
+```
+
+### macOS / Linux
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/klietzau280/void-fortress/main/install-remote.sh | bash
 ```
@@ -40,12 +51,12 @@ curl -fsSL https://raw.githubusercontent.com/klietzau280/void-fortress/main/inst
 Then run `void-fortress` (or `void-fortress --demo` to try without Claude Code).
 
 <details>
-<summary>Manual install</summary>
+<summary>Manual install (macOS/Linux)</summary>
 
 ```bash
 git clone https://github.com/klietzau280/void-fortress.git
 cd void-fortress
-./install.sh
+./install.sh        # or: python3 install.py
 python3 gui.py
 ```
 
@@ -55,7 +66,9 @@ python3 gui.py
 <summary>Uninstall</summary>
 
 ```bash
-./uninstall.sh
+python uninstall.py    # Windows
+python3 uninstall.py   # macOS/Linux
+# or on macOS/Linux: ./uninstall.sh
 ```
 
 Removes the hooks from Claude Code. Your other settings are untouched.
@@ -147,7 +160,7 @@ Context compact     -->   EVERYTHING EXPLODES
 
 ## Requirements
 
-- **macOS**
+- **Windows, macOS, or Linux**
 - **Python 3.9+**
 - **pygame**
 - **Claude Code**
